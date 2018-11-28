@@ -1,0 +1,25 @@
+@startuml
+hide members
+
+class Classloader {
+}
+
+class Foo {
+}
+
+class Bar {
+}
+
+class "Class<Foo>" {
+}
+
+class "Class<Bar>" {
+}
+
+Foo --> "Class<Foo>"
+Bar --> "Class<Bar>"
+
+"Class<Foo>" <--> Classloader
+"Class<Bar>" <--> Classloader
+
+@enduml

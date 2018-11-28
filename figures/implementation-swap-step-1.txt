@@ -1,0 +1,29 @@
+@startuml
+hide fields
+
+note "The API shim delegates its\nimplementation to the\none in the child classloader" as N2
+
+package "Parent classloader" <<Rectangle>> {
+	interface MyApi <<interface>> {
+		+void doIt()
+	}
+
+	class MyApiShim {
+		+void doIt()
+	}
+
+	MyApi <|.. MyApiShim
+	MyApi <|.. "Child classloader.MyApiImpl"
+	MyApiShim -right-> "Child classloader.MyApiImpl" : delegates to >
+	MyApiShim .. .N2
+}
+
+' "Parent classloader.MyApiShim" .. N2
+
+package "Child classloader" <<Rectangle>> {
+	class MyApiImpl {
+		+void doIt()
+	}
+}
+
+@enduml

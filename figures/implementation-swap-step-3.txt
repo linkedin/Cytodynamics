@@ -1,0 +1,38 @@
+@startuml
+hide fields
+
+note "The new implementation is\nused for delegation" as N2
+
+package "Parent classloader" <<Rectangle>> {
+	interface MyApi <<interface>> {
+		+void doIt()
+	}
+
+	class MyApiShim {
+		+void doIt()
+	}
+
+	MyApi <|.. MyApiShim
+	MyApi <|.. "Child classloader (old).MyApiImpl"
+	MyApi <|.. "Child classloader (new).MyApiImpl"
+	MyApiShim --> "Child classloader (new).MyApiImpl" : delegates to >
+	MyApiShim .. .N2
+}
+
+package "Child classloader (old)" <<Rectangle>> {
+	class MyApiImpl {
+		+void doIt()
+	}
+}
+
+package "Child classloader (new)" <<Rectangle>> {
+	class MyApiImpl {
+		+void doIt()
+	}
+}
+
+note "The old implementation is now\nunreferenced and can be GC'ed" as N1
+"Child classloader (old).MyApiImpl" .. N1
+
+
+@enduml

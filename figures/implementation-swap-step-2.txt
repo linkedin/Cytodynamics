@@ -1,0 +1,35 @@
+@startuml
+hide fields
+
+package "Parent classloader" <<Rectangle>> {
+	interface MyApi <<interface>> {
+		+void doIt()
+	}
+
+	class MyApiShim {
+		+void doIt()
+	}
+
+	MyApi <|.. MyApiShim
+	MyApi <|.. "Child classloader (old).MyApiImpl"
+	MyApi <|.. "Child classloader (new).MyApiImpl"
+	MyApiShim -right-> "Child classloader (old).MyApiImpl" : delegates to >
+	MyApiShim --> "Child classloader (new).MyApiImpl" : new implementation >
+}
+
+package "Child classloader (old)" <<Rectangle>> {
+	class MyApiImpl {
+		+void doIt()
+	}
+}
+
+package "Child classloader (new)" <<Rectangle>> {
+	class MyApiImpl {
+		+void doIt()
+	}
+}
+
+note "A new implementation is created and\ninitialized in a new child classloader" as N1
+"Child classloader (new).MyApiImpl" .. N1
+
+@enduml
