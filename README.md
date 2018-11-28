@@ -1,7 +1,7 @@
 Cytodynamics
 ============
 
-Cytodynamics is a library that makes classloader isolation on the JVM easy.
+Cytodynamics is a library that makes dynamic JAR loading and classloader isolation on the JVM easy and painless.
 
 Why Cytodynamics instead of pf4j/OSGi/JPF/JBoss modules?
 --------------------------------------------------------
@@ -29,6 +29,10 @@ For example, if the parent application uses Guava version x and the loaded code 
 when the parent application updates to a later version, this can break if the new version is not binary compatible. In
 Cytodynamics, if the classloaders are isolated, this forces the loaded code to ship with its appropriate version of
 Guava, leading to more stable code in the long term.
+
+As Cytodynamics focuses on simplicity, there is no versioning system, dependency system, or other complexity; more
+complex systems can be built on top of Cytodynamics. Since Cytodynamics does not have a versioning system, multiple
+versions of the same code can be loaded concurrently, allowing for runtime swap of code implementations.
 
 Classloader isolation
 ---------------------
@@ -67,6 +71,11 @@ the loaded code:
         .addWhitelistedClassPattern("com.example.*")
         .build();
 ```
+
+Building
+--------
+
+This project uses Maven, so a simple `mvn install` will do.
 
 License
 -------
