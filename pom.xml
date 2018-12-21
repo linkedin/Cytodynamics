@@ -124,6 +124,7 @@
         <groupId>org.testng</groupId>
         <artifactId>testng</artifactId>
         <version>6.8</version>
+        <scope>test</scope>
         <exclusions>
           <exclusion>
             <artifactId>junit</artifactId>
@@ -132,6 +133,10 @@
           <exclusion>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
+          </exclusion>
+          <exclusion>
+            <artifactId>bsh</artifactId>
+            <groupId>org.beanshell</groupId>
           </exclusion>
         </exclusions>
       </dependency>

@@ -3,3 +3,19 @@ All Rights Reserved.
 
 Licensed under the BSD 2-Clause License (the "License").
 See LICENSE in the project root for license information.
+
+This product includes/uses slf4j (https://www.slf4j.org/)
+Copyright 2004-2017 QOS.ch
+License: MIT
+
+This product includes/uses Apache log4j (https://logging.apache.org/log4j/)
+Copyright 1999-2005 The Apache Software Foundation
+License: Apache 2.0
+
+This product includes/uses TestNG (https://testng.org/)
+Copyright 2004-2017 Cédric Beust
+License: Apache 2.0
+
+This product includes/uses JCommander (https://testng.org/)
+Copyright 2012 Cédric Beust
+License: Apache 2.0
