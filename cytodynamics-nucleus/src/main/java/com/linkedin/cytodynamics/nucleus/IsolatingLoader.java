@@ -66,19 +66,27 @@ class IsolatingLoader implements Loader {
   @Override
   public <T> T newInstanceOf(Class<T> type, String className) {
     try {
-      return loadClass(type, className).newInstance();
+      return loadClass(type, className, false).newInstance();
     } catch (InstantiationException | IllegalAccessException e) {
-      return null;
+      throw new RuntimeException(e);
     }
   }
 
   @Override
   public <T> Class<? extends T> loadClass(Class<T> type, String className) {
+    return loadClass(type, className, true);
+  }
+
+  private <T> Class<? extends T> loadClass(Class<T> type, String className, boolean swallowExceptions) {
     try {
       Class<? extends T> clazz = (Class<? extends T>) classloader.loadClass(className);
       return clazz;
     } catch (ClassNotFoundException e) {
-      return null;
+      if (swallowExceptions) {
+        return null;
+      } else {
+        throw new RuntimeException(e);
+      }
     }
   }
 }
