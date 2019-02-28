@@ -37,4 +37,15 @@ public class TestGlobMatcher {
     assertTrue(matcher.matches("java.lang.reflect.Method"));
     assertFalse(matcher.matches("java.util.List"));
   }
+
+  @Test
+  public void testEscaping() {
+    GlobMatcher dotMatcher = new GlobMatcher(".");
+    assertTrue(dotMatcher.matches("."));
+    assertFalse(dotMatcher.matches("a"));
+
+    GlobMatcher dotStarMatcher = new GlobMatcher(".*");
+    assertTrue(dotStarMatcher.matches(".abcd"));
+    assertFalse(dotStarMatcher.matches("abcd"));
+  }
 }
