@@ -22,7 +22,7 @@ class IsolatingLoader implements Loader {
   private final List<URI> classpath;
   private final IsolatingClassLoader classloader;
 
-  IsolatingLoader(List<URI> classpath, IsolationLevel isolationLevel, Set<GlobMatcher> parentPreferredClassPatterns,
+  IsolatingLoader(List<URI> classpath, OriginRestriction originRestriction, IsolationLevel isolationLevel, Set<GlobMatcher> parentPreferredClassPatterns,
       Set<GlobMatcher> whitelistedClassPatterns, Set<GlobMatcher> blacklistedClassPatterns) {
     this.isolationLevel = isolationLevel;
     this.classpath = classpath;
@@ -30,7 +30,13 @@ class IsolatingLoader implements Loader {
     URL[] classpathUrls = new URL[classpath.size()];
     for (int i = 0; i < classpathUrls.length; i++) {
       try {
-        classpathUrls[i] = classpath.get(i).toURL();
+        URL url = classpath.get(i).toURL();
+
+        if (!originRestriction.isAllowed(url)) {
+          throw new SecurityException("Loading classes from " + url + " is forbidden by the origin restriction. Aborting.");
+        } else {
+          classpathUrls[i] = url;
+        }
       } catch (MalformedURLException e) {
         throw new RuntimeException(e);
       }

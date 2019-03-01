@@ -9,7 +9,6 @@ package com.linkedin.cytodynamics.nucleus;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +24,7 @@ public final class LoaderBuilder {
   private Set<GlobMatcher> parentPreferredClassPatterns = new HashSet<>();
   private Set<GlobMatcher> blacklistedClassPatterns = new HashSet<>();
   private Set<GlobMatcher> whitelistedClassPatterns = new HashSet<>();
+  private OriginRestriction originRestriction = null;
 
   private LoaderBuilder() {
   }
@@ -40,6 +40,11 @@ public final class LoaderBuilder {
 
   public LoaderBuilder withClasspath(List<URI> classpath) {
     this.classpath.addAll(classpath);
+    return this;
+  }
+
+  public LoaderBuilder withOriginRestriction(OriginRestriction originRestriction) {
+    this.originRestriction = originRestriction;
     return this;
   }
 
@@ -59,6 +64,10 @@ public final class LoaderBuilder {
   }
 
   public Loader build() {
-    return new IsolatingLoader(classpath, isolationLevel, parentPreferredClassPatterns, whitelistedClassPatterns, blacklistedClassPatterns);
+    if (originRestriction == null) {
+      throw new RuntimeException("No origin restriction set, use OriginRestriction.allowByDefault() if no restriction is desired");
+    }
+
+    return new IsolatingLoader(classpath, originRestriction, isolationLevel, parentPreferredClassPatterns, whitelistedClassPatterns, blacklistedClassPatterns);
   }
 }

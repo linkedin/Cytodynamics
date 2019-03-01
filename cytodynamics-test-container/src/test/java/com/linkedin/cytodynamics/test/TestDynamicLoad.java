@@ -10,9 +10,13 @@ package com.linkedin.cytodynamics.test;
 import com.linkedin.cytodynamics.nucleus.IsolationLevel;
 import com.linkedin.cytodynamics.nucleus.Loader;
 import com.linkedin.cytodynamics.nucleus.LoaderBuilder;
+import com.linkedin.cytodynamics.nucleus.OriginRestriction;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import org.testng.annotations.Test;
 
@@ -89,6 +93,7 @@ public class TestDynamicLoad {
   public void testLoadA() {
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -103,6 +108,7 @@ public class TestDynamicLoad {
   public void testLoadB() {
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("b")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -117,6 +123,7 @@ public class TestDynamicLoad {
   public void testIsolation() {
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -133,6 +140,7 @@ public class TestDynamicLoad {
     // Full isolation
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.lang.*")
@@ -145,6 +153,7 @@ public class TestDynamicLoad {
 
     loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.TRANSITIONAL)
         .build();
@@ -155,6 +164,7 @@ public class TestDynamicLoad {
 
     loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.NONE)
         .build();
@@ -168,6 +178,7 @@ public class TestDynamicLoad {
   public void testBlacklist() {
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -181,6 +192,7 @@ public class TestDynamicLoad {
 
     loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.TRANSITIONAL)
         .addBlacklistedClassPattern("java.util.*")
@@ -192,6 +204,7 @@ public class TestDynamicLoad {
 
     loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.NONE)
         .addBlacklistedClassPattern("java.util.Set")
@@ -206,6 +219,7 @@ public class TestDynamicLoad {
   public void testLoadAandB() {
     Loader loaderA = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -214,6 +228,7 @@ public class TestDynamicLoad {
 
     Loader loaderB = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("b")))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -242,6 +257,7 @@ public class TestDynamicLoad {
 
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri(jarToUse)))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
@@ -262,8 +278,10 @@ public class TestDynamicLoad {
     for (int i = 0; i < 1000000; i++) {
       Loader loader = LoaderBuilder
           .anIsolatingLoader()
+          .withOriginRestriction(OriginRestriction.allowByDefault())
           .withClasspath(Collections.singletonList(getTestJarUri("a")))
           .withIsolationLevel(IsolationLevel.FULL)
+          .addWhitelistedClassPattern("java.*")
           .build();
 
       TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -275,5 +293,47 @@ public class TestDynamicLoad {
 
     System.out.println("Waiting");
     Thread.sleep(Long.MAX_VALUE);
+  }
+
+  @Test
+  public void testSecurity() throws Exception {
+    File tempDir = new File(System.getProperty("java.io.tmpdir"));
+    Path sourcePath = new File(getTestJarUri("a")).toPath();
+    File destinationFile = new File(tempDir, "a.jar");
+
+    if (destinationFile.exists()) {
+      destinationFile.delete();
+    }
+
+    Files.copy(sourcePath, destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+    OriginRestriction onlyTmpOriginRestriction = OriginRestriction.denyByDefault().allowingDirectory(tempDir, true);
+
+    // This should fail
+    try {
+      Loader loader = LoaderBuilder
+          .anIsolatingLoader()
+          .withOriginRestriction(onlyTmpOriginRestriction)
+          .withClasspath(Collections.singletonList(getTestJarUri("a")))
+          .withIsolationLevel(IsolationLevel.FULL)
+          .addWhitelistedClassPattern("java.*")
+          .build();
+
+      TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
+      fail("Should have thrown a security exception");
+    } catch (SecurityException e) {
+      // Expected
+    }
+
+    // This should succeed
+    Loader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(onlyTmpOriginRestriction)
+        .withClasspath(Collections.singletonList(destinationFile.toURI()))
+        .withIsolationLevel(IsolationLevel.FULL)
+        .addWhitelistedClassPattern("java.*")
+        .build();
+
+    TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
   }
 }
