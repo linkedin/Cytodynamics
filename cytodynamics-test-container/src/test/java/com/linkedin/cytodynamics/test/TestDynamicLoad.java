@@ -332,6 +332,7 @@ public class TestDynamicLoad {
         .withClasspath(Collections.singletonList(destinationFile.toURI()))
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("java.*")
+        .addWhitelistedClassPattern("com.intellij.*")
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
