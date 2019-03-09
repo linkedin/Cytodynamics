@@ -17,13 +17,6 @@ import java.util.List;
 
 /**
  * Origin restriction, which allows restricting the origin of JARs present in the classpath.
- *
- * This is used to filter the original URL on the classpath, but does not take into account redirects. For example, if
- * the URL filter allows http://myhost.com/myjar.jar and that server redirects to http://malicious.com/evil.jar, then
- * the URL filter allows it.
- *
- * For finer control on the JARs loaded, we recommend denying by default and only allowing JARs downloaded at an
- * application-controlled location.
  */
 public class OriginRestriction {
   private final boolean allowedByDefault;

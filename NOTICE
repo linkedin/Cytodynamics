@@ -19,3 +19,7 @@ License: Apache 2.0
 This product includes/uses JCommander (https://jcommander.org/)
 Copyright 2012 Cédric Beust
 License: Apache 2.0
+
+This product includes/uses the Spark Framework (http://sparkjava.com/)
+Copyright 2011- Per Wendel
+License: Apache 2.0
