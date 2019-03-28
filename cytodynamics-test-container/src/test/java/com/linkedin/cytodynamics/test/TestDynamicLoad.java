@@ -69,7 +69,10 @@ public class TestDynamicLoad {
     //
     File[] filesInTargetDir = targetDir.listFiles();
     for (File fileInTargetDir : filesInTargetDir) {
-      if (fileInTargetDir.getName().startsWith("cytodynamics-test") && fileInTargetDir.getName().endsWith(".jar")) {
+      if (fileInTargetDir.getName().startsWith("cytodynamics-test") &&
+          fileInTargetDir.getName().endsWith(".jar") &&
+          !fileInTargetDir.getName().contains("sources") &&
+          !fileInTargetDir.getName().contains("javadoc")) {
         return fileInTargetDir.toURI();
       }
     }
