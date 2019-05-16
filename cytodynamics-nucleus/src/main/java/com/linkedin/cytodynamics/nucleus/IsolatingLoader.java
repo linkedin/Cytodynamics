@@ -10,6 +10,7 @@ package com.linkedin.cytodynamics.nucleus;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Set;
 
@@ -42,8 +43,10 @@ class IsolatingLoader implements Loader {
       }
     }
 
-    classloader = new IsolatingClassLoader(classpathUrls, getClass().getClassLoader(), isolationLevel,
-        parentPreferredClassPatterns, whitelistedClassPatterns, blacklistedClassPatterns);
+    ClassLoader parent = getClass().getClassLoader();
+    URLClassLoader delegateTo = new URLClassLoader(classpathUrls, parent);
+    classloader = new IsolatingClassLoader(delegateTo, parent, isolationLevel, parentPreferredClassPatterns,
+        whitelistedClassPatterns, blacklistedClassPatterns);
   }
 
   @Override

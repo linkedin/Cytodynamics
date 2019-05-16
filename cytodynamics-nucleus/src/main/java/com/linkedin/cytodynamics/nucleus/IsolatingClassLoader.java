@@ -7,8 +7,10 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -19,16 +21,18 @@ import java.util.function.BiFunction;
 class IsolatingClassLoader extends URLClassLoader {
   private static final Logger LOGGER = LogApiAdapter.getLogger(IsolatingClassLoader.class);
 
+  private URLClassLoader delegateTo;
   private ClassLoader parent;
   private IsolationLevel isolationLevel;
   private Set<GlobMatcher> parentPreferredClassPatterns;
   private Set<GlobMatcher> blacklistedClassPatterns;
   private Set<GlobMatcher> whitelistedClassPatterns;
 
-  IsolatingClassLoader(URL[] classpath, ClassLoader parent, IsolationLevel isolationLevel,
+  IsolatingClassLoader(URLClassLoader delegateTo, ClassLoader parent, IsolationLevel isolationLevel,
       Set<GlobMatcher> parentPreferredClassPatterns, Set<GlobMatcher> whitelistedClassPatterns,
       Set<GlobMatcher> blacklistedClassPatterns) {
-    super(classpath , parent);
+    super(delegateTo.getURLs(), parent);
+    this.delegateTo = delegateTo;
     this.parent = parent;
     this.isolationLevel = isolationLevel;
     this.parentPreferredClassPatterns = parentPreferredClassPatterns;
@@ -116,7 +120,7 @@ class IsolatingClassLoader extends URLClassLoader {
     }
 
     try {
-      childClass = findClass(name);
+      childClass = this.delegateTo.loadClass(name);
     } catch (ClassNotFoundException | NoClassDefFoundError e) {
       // Ignored
     }
@@ -137,11 +141,6 @@ class IsolatingClassLoader extends URLClassLoader {
     } else {
       throw new ClassNotFoundException();
     }
-  }
-
-  @Override
-  protected Class<?> findClass(String name) throws ClassNotFoundException {
-    return super.findClass(name);
   }
 
   private static IsolationBehaviors getIsolationBehavior(IsolationLevel isolationLevel, Class<?> parentClass,
