@@ -9,7 +9,7 @@ package com.linkedin.cytodynamics.nucleus;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Set;
+import java.util.List;
 import java.util.function.BiFunction;
 
 
@@ -19,21 +19,25 @@ import java.util.function.BiFunction;
 class IsolatingClassLoader extends URLClassLoader {
   private static final Logger LOGGER = LogApiAdapter.getLogger(IsolatingClassLoader.class);
 
-  private ClassLoader parent;
-  private IsolationLevel isolationLevel;
-  private Set<GlobMatcher> parentPreferredClassPatterns;
-  private Set<GlobMatcher> blacklistedClassPatterns;
-  private Set<GlobMatcher> whitelistedClassPatterns;
+  private final List<ParentClassLoaderContext> parentClassLoaderContexts;
 
-  IsolatingClassLoader(URL[] classpath, ClassLoader parent, IsolationLevel isolationLevel,
-      Set<GlobMatcher> parentPreferredClassPatterns, Set<GlobMatcher> whitelistedClassPatterns,
-      Set<GlobMatcher> blacklistedClassPatterns) {
-    super(classpath , parent);
-    this.parent = parent;
-    this.isolationLevel = isolationLevel;
-    this.parentPreferredClassPatterns = parentPreferredClassPatterns;
-    this.blacklistedClassPatterns = blacklistedClassPatterns;
-    this.whitelistedClassPatterns = whitelistedClassPatterns;
+  /**
+   * @param classpath classpath for this classloader
+   * @param parentClassLoaderContexts non-empty list of {@link ParentClassLoaderContext}s
+   */
+  IsolatingClassLoader(URL[] classpath, List<ParentClassLoaderContext> parentClassLoaderContexts) {
+    super(classpath, validate(parentClassLoaderContexts).get(0).getParentClassLoader());
+    this.parentClassLoaderContexts = parentClassLoaderContexts;
+  }
+
+  /**
+   * Validates that {@code parentClassLoaderContexts} is non-empty.
+   */
+  private static List<ParentClassLoaderContext> validate(List<ParentClassLoaderContext> parentClassLoaderContexts) {
+    if (parentClassLoaderContexts.isEmpty()) {
+      throw new IllegalArgumentException("Must have at least one parent");
+    }
+    return parentClassLoaderContexts;
   }
 
   enum IsolationBehaviors {
@@ -54,7 +58,7 @@ class IsolatingClassLoader extends URLClassLoader {
     public Class<?> getEffectiveClass(Class<?> parent, Class<?> child) {
       return _function.apply(parent, child);
     }
-  };
+  }
 
   private static final IsolationBehaviors[][] ISOLATION_BEHAVIORS = new IsolationBehaviors[][]{
       // NONE
@@ -82,12 +86,31 @@ class IsolatingClassLoader extends URLClassLoader {
 
   @Override
   public Class<?> loadClass(String name) throws ClassNotFoundException {
+    for (ParentClassLoaderContext parentClassLoaderContext : this.parentClassLoaderContexts) {
+      Class<?> loadedClass = tryLoadClassWithParent(name, parentClassLoaderContext);
+      if (loadedClass != null) {
+        return loadedClass;
+      }
+    }
+    // got through all parents but could not find any class
+    throw new ClassNotFoundException("Could not load class for name " + name);
+  }
+
+  /**
+   * Try to load a class corresponding to an individual {@link ParentClassLoaderContext}.
+   *
+   * @param name name of the class to load
+   * @param parentClassLoaderContext {@link ParentClassLoaderContext} to use for loading
+   * @return {@link Class} corresponding to {@code name} if a class could be resolved corresponding to the
+   * {@code parentClassLoaderContext}; null otherwise
+   */
+  private Class<?> tryLoadClassWithParent(String name, ParentClassLoaderContext parentClassLoaderContext) {
     Class<?> parentClass = null;
     Class<?> childClass = null;
 
     // Is the class blacklisted from being loaded from the parent?
     boolean isBlacklisted = false;
-    for (GlobMatcher blacklistedClassPattern : blacklistedClassPatterns) {
+    for (GlobMatcher blacklistedClassPattern : parentClassLoaderContext.getBlacklistedClassPatterns()) {
       if (blacklistedClassPattern.matches(name)) {
         isBlacklisted = true;
         break;
@@ -97,14 +120,14 @@ class IsolatingClassLoader extends URLClassLoader {
     // Is it already loaded in the parent class loader?
     try {
       if (!isBlacklisted) {
-        parentClass = parent.loadClass(name);
+        parentClass = parentClassLoaderContext.getParentClassLoader().loadClass(name);
 
         // Is it part of the exported API or part of core Java?
         if (parentClass.isAnnotationPresent(Api.class)) {
           return parentClass;
         } else {
           // Is it parent preferred?
-          for (GlobMatcher parentPreferredClassPattern : parentPreferredClassPatterns) {
+          for (GlobMatcher parentPreferredClassPattern : parentClassLoaderContext.getParentPreferredClassPatterns()) {
             if (parentPreferredClassPattern.matches(name)) {
               return parentClass;
             }
@@ -121,22 +144,20 @@ class IsolatingClassLoader extends URLClassLoader {
       // Ignored
     }
 
-    Class<?> returnValue = getIsolationBehavior(isolationLevel, parentClass, childClass).getEffectiveClass(parentClass, childClass);
+    Class<?> returnValue =
+        getIsolationBehavior(parentClassLoaderContext.getIsolationLevel(), parentClass, childClass).getEffectiveClass(
+            parentClass, childClass);
 
     // Is it whitelisted and present in the parent class loader but hidden due to the isolation behavior?
     if (returnValue == null && parentClass != null) {
-      for (GlobMatcher whitelistedClassPattern : whitelistedClassPatterns) {
+      for (GlobMatcher whitelistedClassPattern : parentClassLoaderContext.getWhitelistedClassPatterns()) {
         if (whitelistedClassPattern.matches(name)) {
           return parentClass;
         }
       }
     }
 
-    if (returnValue != null) {
-      return returnValue;
-    } else {
-      throw new ClassNotFoundException();
-    }
+    return returnValue;
   }
 
   @Override
