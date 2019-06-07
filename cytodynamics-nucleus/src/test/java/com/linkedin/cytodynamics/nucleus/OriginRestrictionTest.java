@@ -60,10 +60,12 @@ public class OriginRestrictionTest {
     // Shouldn't be able to load a class through a redirect
     Loader loader = LoaderBuilder
         .anIsolatingLoader()
-        .withIsolationLevel(IsolationLevel.FULL)
-        .withOriginRestriction(allowOnlyLocalhost)
-        .addWhitelistedClassPattern("java.*")
         .withClasspath(Collections.singletonList(new URI(ALLOWED_JAR_LOCATION)))
+        .withOriginRestriction(allowOnlyLocalhost)
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .build())
         .build();
 
     Class clazz = loader.loadClass(Object.class, "org.apache.log4j.Logger");
@@ -72,10 +74,12 @@ public class OriginRestrictionTest {
     // Should be able to load the class using the original URL
     loader = LoaderBuilder
         .anIsolatingLoader()
-        .withIsolationLevel(IsolationLevel.FULL)
-        .withOriginRestriction(OriginRestriction.allowByDefault())
-        .addWhitelistedClassPattern("java.*")
         .withClasspath(Collections.singletonList(new URI(REDIRECTED_JAR_LOCATION)))
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .build())
         .build();
 
     clazz = loader.loadClass(Object.class, "org.apache.log4j.Logger");

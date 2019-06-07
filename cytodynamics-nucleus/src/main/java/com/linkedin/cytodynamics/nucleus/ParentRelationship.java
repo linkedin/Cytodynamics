@@ -13,14 +13,14 @@ import java.util.Set;
 /**
  * Contains objects and configuration for an individual parent classloading step for {@link IsolatingClassLoader}.
  */
-public class ParentClassLoaderContext {
+public class ParentRelationship {
   private final ClassLoader parentClassLoader;
   private final IsolationLevel isolationLevel;
   private final Set<GlobMatcher> parentPreferredClassPatterns;
   private final Set<GlobMatcher> blacklistedClassPatterns;
   private final Set<GlobMatcher> whitelistedClassPatterns;
 
-  public ParentClassLoaderContext(ClassLoader parent,
+  public ParentRelationship(ClassLoader parent,
       IsolationLevel isolationLevel,
       Set<GlobMatcher> parentPreferredClassPatterns,
       Set<GlobMatcher> blacklistedClassPatterns,
