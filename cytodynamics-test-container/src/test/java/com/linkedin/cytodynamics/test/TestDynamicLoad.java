@@ -21,6 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.linkedin.cytodynamics.nucleus.ParentRelationshipBuilder;
 import org.testng.annotations.Test;
 
@@ -327,6 +330,71 @@ public class TestDynamicLoad {
     assertEquals(clazz.getClassLoader(), parentClassLoaderB);
   }
 
+  /**
+   * Graph structure:
+   *
+   * (common parent  <------------ (partial delegation
+   *  classloader)                  classloader)
+   *          ^                     ^
+   *          |                    /
+   *          |                   /
+   *         FULL               NONE
+   *          |                 /
+   *          |                /
+   *         (child classloader)
+   *
+   * A more concrete use case for this is that the common parent would contain some shared API interfaces that need to
+   * be used by both the partial delegation classloader and the child classloader. The partial delegation classloader
+   * and the child classloader could be managed by different owners, so they would need to be separate and isolated.
+   *
+   * It should not be possible to build a cyclic graph with the cytodynamics builder APIs, so we are just considering an
+   * acyclic graph here.
+   */
+  @Test(description = "Given a structure in which the parent relationships form a graph, and two of the loaders have "
+      + "a common parent, then delegation should properly load from the correct loaders")
+  public void testGraphRelationshipWithCommonParent() throws Exception {
+    URL commonParentJarUrl = getTestJarUri("api").toURL();
+    ClassLoader commonParent = new URLClassLoader(new URL[]{commonParentJarUrl}, null);
+    ClassLoader partialDelegation = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, commonParent);
+    Loader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(commonParent)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern(TestInterface.class.getName())
+            .build())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(partialDelegation)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .addWhitelistedClassPattern("java.*")
+            .build())
+        .build();
+
+    /*
+     * If we tried to assign to a TestInterface variable directly, it would not work, because the TestInterface for the
+     * actual objects are loaded from the commonParent and not the classloader which is associated with the execution of
+     * this test.
+     * This means we need to use reflection to call methods on the objects.
+     */
+    Object testInterfaceImpl = loader.newInstanceOf(Object.class, TestInterfaceImpl.class.getName());
+    // check that the TestInterfaceImpl comes from the loader classpath
+    assertEquals(testInterfaceImpl.getClass().getMethod("getValue").invoke(testInterfaceImpl), "B");
+    // check that the TestInterface interface implemented by TestInterfaceImpl is loaded by the common parent
+    Class<?> testInterfaceImplInterface = findTestInterface(testInterfaceImpl.getClass());
+    assertEquals(testInterfaceImplInterface.getClassLoader(), commonParent);
+    Object testInterfaceAOnlyImpl = loader.newInstanceOf(Object.class, TestInterfaceAOnlyImpl.class.getName());
+    // check that the TestInterfaceAOnlyImpl comes from the partial delegation classpath
+    assertEquals(testInterfaceAOnlyImpl.getClass().getClassLoader(), partialDelegation);
+    // check that the TestInterface interface implemented by TestInterfaceAOnlyImpl is loaded by the common parent
+    Class<?> testInterfaceAOnlyImplInterface = findTestInterface(testInterfaceAOnlyImpl.getClass());
+    assertEquals(testInterfaceAOnlyImplInterface.getClassLoader(), commonParent);
+    // since these are both loaded from the common parent, then this should always be true, but double checking anyways
+    assertEquals(testInterfaceImplInterface, testInterfaceAOnlyImplInterface);
+  }
+
   @Test
   public void testParentPreferred() {
     TestInterface implementation = new TestInterfaceImpl();
@@ -429,5 +497,13 @@ public class TestDynamicLoad {
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
+  }
+
+  private static Class<?> findTestInterface(Class<?> implClass) {
+    List<Class<?>> foundInterfaces = Stream.of(implClass.getInterfaces())
+        .filter(clazz -> clazz.getName().equals(TestInterface.class.getName()))
+        .collect(Collectors.toList());
+    assertEquals(foundInterfaces.size(), 1);
+    return foundInterfaces.iterator().next();
   }
 }

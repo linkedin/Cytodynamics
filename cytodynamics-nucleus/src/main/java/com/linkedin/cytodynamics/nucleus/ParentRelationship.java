@@ -20,11 +20,8 @@ public class ParentRelationship {
   private final Set<GlobMatcher> blacklistedClassPatterns;
   private final Set<GlobMatcher> whitelistedClassPatterns;
 
-  public ParentRelationship(ClassLoader parent,
-      IsolationLevel isolationLevel,
-      Set<GlobMatcher> parentPreferredClassPatterns,
-      Set<GlobMatcher> blacklistedClassPatterns,
-      Set<GlobMatcher> whitelistedClassPatterns) {
+  ParentRelationship(ClassLoader parent, IsolationLevel isolationLevel, Set<GlobMatcher> parentPreferredClassPatterns,
+      Set<GlobMatcher> blacklistedClassPatterns, Set<GlobMatcher> whitelistedClassPatterns) {
     this.parentClassLoader = parent;
     this.isolationLevel = isolationLevel;
     this.parentPreferredClassPatterns = parentPreferredClassPatterns;
