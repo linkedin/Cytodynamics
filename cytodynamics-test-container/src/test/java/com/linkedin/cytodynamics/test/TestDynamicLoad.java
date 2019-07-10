@@ -289,13 +289,11 @@ public class TestDynamicLoad {
             .withParentClassLoader(parentClassLoaderA)
             // using NONE so that we can load the class from the parent
             .withIsolationLevel(IsolationLevel.NONE)
-            .addWhitelistedClassPattern("java.*")
+            .addParentPreferredClassPattern("java.*")
             .build())
         .addParentRelationship(ParentRelationshipBuilder.builder()
             .withParentClassLoader(parentClassLoaderB)
-            // using NONE so that we can load the class from the parent
             .withIsolationLevel(IsolationLevel.NONE)
-            .addWhitelistedClassPattern("java.*")
             .build())
         .build();
     Class<?> clazz = loader.loadClass(Object.class, TestInterfaceImpl.class.getName());
@@ -317,13 +315,12 @@ public class TestDynamicLoad {
             .withParentClassLoader(parentClassLoaderA)
             // using FULL so that the implementation class is not loaded from this parent
             .withIsolationLevel(IsolationLevel.FULL)
-            .addWhitelistedClassPattern("java.*")
+            .addParentPreferredClassPattern("java.*")
             .build())
         .addParentRelationship(ParentRelationshipBuilder.builder()
             .withParentClassLoader(parentClassLoaderB)
             // using NONE so that we can load the class from the parent
             .withIsolationLevel(IsolationLevel.NONE)
-            .addWhitelistedClassPattern("java.*")
             .build())
         .build();
     Class<?> clazz = loader.loadClass(Object.class, TestInterfaceImpl.class.getName());
@@ -363,13 +360,11 @@ public class TestDynamicLoad {
         .addParentRelationship(ParentRelationshipBuilder.builder()
             .withParentClassLoader(commonParent)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addWhitelistedClassPattern("java.*")
-            .addWhitelistedClassPattern(TestInterface.class.getName())
+            .addParentPreferredClassPattern("java.*")
             .build())
         .addParentRelationship(ParentRelationshipBuilder.builder()
             .withParentClassLoader(partialDelegation)
             .withIsolationLevel(IsolationLevel.NONE)
-            .addWhitelistedClassPattern("java.*")
             .build())
         .build();
 
