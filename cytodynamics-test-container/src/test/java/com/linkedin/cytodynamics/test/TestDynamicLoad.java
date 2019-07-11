@@ -361,6 +361,8 @@ public class TestDynamicLoad {
             .withParentClassLoader(commonParent)
             .withIsolationLevel(IsolationLevel.FULL)
             .addParentPreferredClassPattern("java.*")
+            // TODO fix: when loader's classloader doesn't match the parent classloader, Api annotation doesn't apply
+            .addParentPreferredClassPattern(TestInterface.class.getName())
             .build())
         .addParentRelationship(ParentRelationshipBuilder.builder()
             .withParentClassLoader(partialDelegation)
