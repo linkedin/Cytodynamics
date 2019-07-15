@@ -344,8 +344,10 @@ public class TestDynamicLoad {
    * be used by both the partial delegation classloader and the child classloader. The partial delegation classloader
    * and the child classloader could be managed by different owners, so they would need to be separate and isolated.
    *
-   * It should not be possible to build a cyclic graph with the cytodynamics builder APIs, so we are just considering an
-   * acyclic graph here.
+   * It should not be possible to build a cyclic graph due to the immutability of the cytodynamics loaders once they are
+   * constructed. For example, if we wanted to create a loop between loader A and loader B, then B would need to exist
+   * to construct A, and A would need to exist to construct B. We can't have both (excluding reflection). Therefore, we
+   * are just considering an acyclic graph here.
    */
   @Test(description = "Given a structure in which the parent relationships form a graph, and two of the loaders have "
       + "a common parent, then delegation should properly load from the correct loaders")
@@ -377,19 +379,20 @@ public class TestDynamicLoad {
      * This means we need to use reflection to call methods on the objects.
      */
     Object testInterfaceImpl = loader.newInstanceOf(Object.class, TestInterfaceImpl.class.getName());
-    // check that the TestInterfaceImpl comes from the loader classpath
-    assertEquals(testInterfaceImpl.getClass().getMethod("getValue").invoke(testInterfaceImpl), "B");
-    // check that the TestInterface interface implemented by TestInterfaceImpl is loaded by the common parent
+    assertEquals(testInterfaceImpl.getClass().getMethod("getValue").invoke(testInterfaceImpl), "B",
+        "TestInterfaceImpl needs to come from the main loader classpath");
     Class<?> testInterfaceImplInterface = findTestInterface(testInterfaceImpl.getClass());
-    assertEquals(testInterfaceImplInterface.getClassLoader(), commonParent);
+    assertEquals(testInterfaceImplInterface.getClassLoader(), commonParent,
+        "TestInterface which is implemented by TestInterfaceImpl needs to come from the common parent");
     Object testInterfaceAOnlyImpl = loader.newInstanceOf(Object.class, TestInterfaceAOnlyImpl.class.getName());
-    // check that the TestInterfaceAOnlyImpl comes from the partial delegation classpath
-    assertEquals(testInterfaceAOnlyImpl.getClass().getClassLoader(), partialDelegation);
-    // check that the TestInterface interface implemented by TestInterfaceAOnlyImpl is loaded by the common parent
+    assertEquals(testInterfaceAOnlyImpl.getClass().getClassLoader(), partialDelegation,
+        "TestInterfaceAOnlyImpl needs to come from the partial delegation classpath");
     Class<?> testInterfaceAOnlyImplInterface = findTestInterface(testInterfaceAOnlyImpl.getClass());
-    assertEquals(testInterfaceAOnlyImplInterface.getClassLoader(), commonParent);
+    assertEquals(testInterfaceAOnlyImplInterface.getClassLoader(), commonParent,
+        "TestInterfaceAOnlyImpl which is implemented by TestInterfaceImpl needs to come from the common parent");
     // since these are both loaded from the common parent, then this should always be true, but double checking anyways
-    assertEquals(testInterfaceImplInterface, testInterfaceAOnlyImplInterface);
+    assertEquals(testInterfaceImplInterface, testInterfaceAOnlyImplInterface,
+        "TestInterface Class should be the same for TestInterfaceImpl and TestInterfaceAOnlyImpl");
   }
 
   @Test
