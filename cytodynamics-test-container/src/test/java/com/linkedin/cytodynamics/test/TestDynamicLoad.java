@@ -13,11 +13,18 @@ import com.linkedin.cytodynamics.nucleus.LoaderBuilder;
 import com.linkedin.cytodynamics.nucleus.OriginRestriction;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import com.linkedin.cytodynamics.nucleus.ParentRelationshipBuilder;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -98,9 +105,11 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -113,9 +122,11 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("b")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -128,9 +139,11 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -145,9 +158,11 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.lang.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.lang.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -158,7 +173,9 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.TRANSITIONAL)
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.TRANSITIONAL)
+            .build())
         .build();
 
     implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -169,7 +186,9 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.NONE)
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
         .build();
 
     implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -183,10 +202,12 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addBlacklistedClassPattern("java.util.Set")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addBlacklistedClassPattern("java.util.Set")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -197,8 +218,10 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.TRANSITIONAL)
-        .addBlacklistedClassPattern("java.util.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.TRANSITIONAL)
+            .addBlacklistedClassPattern("java.util.*")
+            .build())
         .build();
 
     implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -209,8 +232,10 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.NONE)
-        .addBlacklistedClassPattern("java.util.Set")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.NONE)
+            .addBlacklistedClassPattern("java.util.Set")
+            .build())
         .build();
 
     implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -224,18 +249,22 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("a")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     Loader loaderB = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri("b")))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementationA = loaderA.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -243,6 +272,127 @@ public class TestDynamicLoad {
 
     assertEquals(implementationA.getValue(), "A");
     assertEquals(implementationB.getValue(), "B");
+  }
+
+  @Test(description = "Given that there are multiple parent relationships, and all can load a class, the class should "
+      + "be loaded from the first parent relationship")
+  public void testMultipleParentsLoadFromFirstParent() throws MalformedURLException {
+    URL testApiJarURL = getTestJarUri("api").toURL();
+    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
+    ClassLoader parentClassLoaderB = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("b").toURL()}, null);
+    Loader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        // will load class from parent, so don't need any classpath
+        .withClasspath(Collections.emptyList())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(parentClassLoaderA)
+            // using NONE so that we can load the class from the parent
+            .withIsolationLevel(IsolationLevel.NONE)
+            .addParentPreferredClassPattern("java.*")
+            .build())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(parentClassLoaderB)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+    Class<?> clazz = loader.loadClass(Object.class, TestInterfaceImpl.class.getName());
+    assertEquals(clazz.getClassLoader(), parentClassLoaderA);
+  }
+
+  @Test(description = "Given that there are multiple parent relationships, but only the last parent has a class, the "
+      + "class should be loaded by the last parent")
+  public void testMultipleParentsLoadFromLastParent() throws MalformedURLException {
+    URL testApiJarURL = getTestJarUri("api").toURL();
+    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
+    ClassLoader parentClassLoaderB = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("b").toURL()}, null);
+    Loader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        // will load class from parent, so don't need any classpath
+        .withClasspath(Collections.emptyList())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(parentClassLoaderA)
+            // using FULL so that the implementation class is not loaded from this parent
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addParentPreferredClassPattern("java.*")
+            .build())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(parentClassLoaderB)
+            // using NONE so that we can load the class from the parent
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+    Class<?> clazz = loader.loadClass(Object.class, TestInterfaceImpl.class.getName());
+    assertEquals(clazz.getClassLoader(), parentClassLoaderB);
+  }
+
+  /**
+   * Graph structure:
+   *
+   * (common parent  <------------ (partial delegation
+   *  classloader)                  classloader)
+   *          ^                     ^
+   *          |                    /
+   *          |                   /
+   *         FULL               NONE
+   *          |                 /
+   *          |                /
+   *         (child classloader)
+   *
+   * A more concrete use case for this is that the common parent would contain some shared API interfaces that need to
+   * be used by both the partial delegation classloader and the child classloader. The partial delegation classloader
+   * and the child classloader could be managed by different owners, so they would need to be separate and isolated.
+   *
+   * It should not be possible to build a cyclic graph due to the immutability of the cytodynamics loaders once they are
+   * constructed. For example, if we wanted to create a loop between loader A and loader B, then B would need to exist
+   * to construct A, and A would need to exist to construct B. We can't have both (excluding reflection). Therefore, we
+   * are just considering an acyclic graph here.
+   */
+  @Test(description = "Given a structure in which the parent relationships form a graph, and two of the loaders have "
+      + "a common parent, then delegation should properly load from the correct loaders")
+  public void testGraphRelationshipWithCommonParent() throws Exception {
+    URL commonParentJarUrl = getTestJarUri("api").toURL();
+    ClassLoader commonParent = new URLClassLoader(new URL[]{commonParentJarUrl}, null);
+    ClassLoader partialDelegation = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, commonParent);
+    Loader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(commonParent)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addParentPreferredClassPattern("java.*")
+            // TODO fix: when loader's classloader doesn't match the parent classloader, Api annotation doesn't apply
+            .addParentPreferredClassPattern(TestInterface.class.getName())
+            .build())
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withParentClassLoader(partialDelegation)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+
+    /*
+     * If we tried to assign to a TestInterface variable directly, it would not work, because the TestInterface for the
+     * actual objects are loaded from the commonParent and not the classloader which is associated with the execution of
+     * this test.
+     * This means we need to use reflection to call methods on the objects.
+     */
+    Object testInterfaceImpl = loader.newInstanceOf(Object.class, TestInterfaceImpl.class.getName());
+    assertEquals(testInterfaceImpl.getClass().getMethod("getValue").invoke(testInterfaceImpl), "B",
+        "TestInterfaceImpl needs to come from the main loader classpath");
+    Class<?> testInterfaceImplInterface = findTestInterface(testInterfaceImpl.getClass());
+    assertEquals(testInterfaceImplInterface.getClassLoader(), commonParent,
+        "TestInterface which is implemented by TestInterfaceImpl needs to come from the common parent");
+    Object testInterfaceAOnlyImpl = loader.newInstanceOf(Object.class, TestInterfaceAOnlyImpl.class.getName());
+    assertEquals(testInterfaceAOnlyImpl.getClass().getClassLoader(), partialDelegation,
+        "TestInterfaceAOnlyImpl needs to come from the partial delegation classpath");
+    Class<?> testInterfaceAOnlyImplInterface = findTestInterface(testInterfaceAOnlyImpl.getClass());
+    assertEquals(testInterfaceAOnlyImplInterface.getClassLoader(), commonParent,
+        "TestInterfaceAOnlyImpl which is implemented by TestInterfaceImpl needs to come from the common parent");
+    // since these are both loaded from the common parent, then this should always be true, but double checking anyways
+    assertEquals(testInterfaceImplInterface, testInterfaceAOnlyImplInterface,
+        "TestInterface Class should be the same for TestInterfaceImpl and TestInterfaceAOnlyImpl");
   }
 
   @Test
@@ -262,10 +412,12 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getTestJarUri(jarToUse)))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
-        .addParentPreferredClassPattern("com.linkedin.cytodynamics.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .addParentPreferredClassPattern("com.linkedin.cytodynamics.*")
+            .build())
         .build();
 
     TestInterface childImplementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -283,8 +435,10 @@ public class TestDynamicLoad {
           .anIsolatingLoader()
           .withOriginRestriction(OriginRestriction.allowByDefault())
           .withClasspath(Collections.singletonList(getTestJarUri("a")))
-          .withIsolationLevel(IsolationLevel.FULL)
-          .addWhitelistedClassPattern("java.*")
+          .addParentRelationship(ParentRelationshipBuilder.builder()
+              .withIsolationLevel(IsolationLevel.FULL)
+              .addWhitelistedClassPattern("java.*")
+              .build())
           .build();
 
       TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -318,8 +472,10 @@ public class TestDynamicLoad {
           .anIsolatingLoader()
           .withOriginRestriction(onlyTmpOriginRestriction)
           .withClasspath(Collections.singletonList(getTestJarUri("a")))
-          .withIsolationLevel(IsolationLevel.FULL)
-          .addWhitelistedClassPattern("java.*")
+          .addParentRelationship(ParentRelationshipBuilder.builder()
+              .withIsolationLevel(IsolationLevel.FULL)
+              .addWhitelistedClassPattern("java.*")
+              .build())
           .build();
 
       TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
@@ -333,11 +489,21 @@ public class TestDynamicLoad {
         .anIsolatingLoader()
         .withOriginRestriction(onlyTmpOriginRestriction)
         .withClasspath(Collections.singletonList(destinationFile.toURI()))
-        .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("java.*")
-        .addWhitelistedClassPattern("com.intellij.*")
+        .addParentRelationship(ParentRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedClassPattern("java.*")
+            .addWhitelistedClassPattern("com.intellij.*")
+            .build())
         .build();
 
     TestInterface implementation = loader.newInstanceOf(TestInterface.class, TestInterfaceImpl.class.getName());
+  }
+
+  private static Class<?> findTestInterface(Class<?> implClass) {
+    List<Class<?>> foundInterfaces = Stream.of(implClass.getInterfaces())
+        .filter(clazz -> clazz.getName().equals(TestInterface.class.getName()))
+        .collect(Collectors.toList());
+    assertEquals(foundInterfaces.size(), 1);
+    return foundInterfaces.iterator().next();
   }
 }

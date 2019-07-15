@@ -9,7 +9,7 @@ package com.linkedin.cytodynamics.nucleus;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Set;
+import java.util.List;
 import java.util.function.BiFunction;
 
 
@@ -19,21 +19,20 @@ import java.util.function.BiFunction;
 class IsolatingClassLoader extends URLClassLoader {
   private static final Logger LOGGER = LogApiAdapter.getLogger(IsolatingClassLoader.class);
 
-  private ClassLoader parent;
-  private IsolationLevel isolationLevel;
-  private Set<GlobMatcher> parentPreferredClassPatterns;
-  private Set<GlobMatcher> blacklistedClassPatterns;
-  private Set<GlobMatcher> whitelistedClassPatterns;
+  private final List<ParentRelationship> parentRelationships;
 
-  IsolatingClassLoader(URL[] classpath, ClassLoader parent, IsolationLevel isolationLevel,
-      Set<GlobMatcher> parentPreferredClassPatterns, Set<GlobMatcher> whitelistedClassPatterns,
-      Set<GlobMatcher> blacklistedClassPatterns) {
-    super(classpath , parent);
-    this.parent = parent;
-    this.isolationLevel = isolationLevel;
-    this.parentPreferredClassPatterns = parentPreferredClassPatterns;
-    this.blacklistedClassPatterns = blacklistedClassPatterns;
-    this.whitelistedClassPatterns = whitelistedClassPatterns;
+  /**
+   * @param classpath classpath for this classloader
+   * @param parentRelationships non-empty list of {@link ParentRelationship}s
+   */
+  IsolatingClassLoader(URL[] classpath, List<ParentRelationship> parentRelationships) {
+    /*
+     * Null parent means using the bootstrap classloader as the parent. It is hard to define which one of the multiple
+     * parents would be reasonable to use. This classloader won't be able to load any resources through the parent, but
+     * that is still reasonably consistent with the isolation strategy.
+     */
+    super(classpath, null);
+    this.parentRelationships = parentRelationships;
   }
 
   enum IsolationBehaviors {
@@ -54,7 +53,7 @@ class IsolatingClassLoader extends URLClassLoader {
     public Class<?> getEffectiveClass(Class<?> parent, Class<?> child) {
       return _function.apply(parent, child);
     }
-  };
+  }
 
   private static final IsolationBehaviors[][] ISOLATION_BEHAVIORS = new IsolationBehaviors[][]{
       // NONE
@@ -82,12 +81,31 @@ class IsolatingClassLoader extends URLClassLoader {
 
   @Override
   public Class<?> loadClass(String name) throws ClassNotFoundException {
+    for (ParentRelationship parentRelationship : this.parentRelationships) {
+      Class<?> loadedClass = tryLoadClassWithParent(name, parentRelationship);
+      if (loadedClass != null) {
+        return loadedClass;
+      }
+    }
+    // got through all parents but could not find any class
+    throw new ClassNotFoundException("Could not load class for name " + name);
+  }
+
+  /**
+   * Try to load a class corresponding to an individual {@link ParentRelationship}.
+   *
+   * @param name name of the class to load
+   * @param parentRelationship {@link ParentRelationship} to use for loading
+   * @return {@link Class} corresponding to {@code name} if a class could be resolved corresponding to the
+   * {@code parentRelationship}; null otherwise
+   */
+  private Class<?> tryLoadClassWithParent(String name, ParentRelationship parentRelationship) {
     Class<?> parentClass = null;
     Class<?> childClass = null;
 
     // Is the class blacklisted from being loaded from the parent?
     boolean isBlacklisted = false;
-    for (GlobMatcher blacklistedClassPattern : blacklistedClassPatterns) {
+    for (GlobMatcher blacklistedClassPattern : parentRelationship.getBlacklistedClassPatterns()) {
       if (blacklistedClassPattern.matches(name)) {
         isBlacklisted = true;
         break;
@@ -97,14 +115,14 @@ class IsolatingClassLoader extends URLClassLoader {
     // Is it already loaded in the parent class loader?
     try {
       if (!isBlacklisted) {
-        parentClass = parent.loadClass(name);
+        parentClass = parentRelationship.getParentClassLoader().loadClass(name);
 
         // Is it part of the exported API or part of core Java?
         if (parentClass.isAnnotationPresent(Api.class)) {
           return parentClass;
         } else {
           // Is it parent preferred?
-          for (GlobMatcher parentPreferredClassPattern : parentPreferredClassPatterns) {
+          for (GlobMatcher parentPreferredClassPattern : parentRelationship.getParentPreferredClassPatterns()) {
             if (parentPreferredClassPattern.matches(name)) {
               return parentClass;
             }
@@ -121,27 +139,20 @@ class IsolatingClassLoader extends URLClassLoader {
       // Ignored
     }
 
-    Class<?> returnValue = getIsolationBehavior(isolationLevel, parentClass, childClass).getEffectiveClass(parentClass, childClass);
+    Class<?> returnValue =
+        getIsolationBehavior(parentRelationship.getIsolationLevel(), parentClass, childClass).getEffectiveClass(
+            parentClass, childClass);
 
     // Is it whitelisted and present in the parent class loader but hidden due to the isolation behavior?
     if (returnValue == null && parentClass != null) {
-      for (GlobMatcher whitelistedClassPattern : whitelistedClassPatterns) {
+      for (GlobMatcher whitelistedClassPattern : parentRelationship.getWhitelistedClassPatterns()) {
         if (whitelistedClassPattern.matches(name)) {
           return parentClass;
         }
       }
     }
 
-    if (returnValue != null) {
-      return returnValue;
-    } else {
-      throw new ClassNotFoundException();
-    }
-  }
-
-  @Override
-  protected Class<?> findClass(String name) throws ClassNotFoundException {
-    return super.findClass(name);
+    return returnValue;
   }
 
   private static IsolationBehaviors getIsolationBehavior(IsolationLevel isolationLevel, Class<?> parentClass,

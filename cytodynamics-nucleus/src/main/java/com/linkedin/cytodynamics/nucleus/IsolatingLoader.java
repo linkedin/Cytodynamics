@@ -18,15 +18,10 @@ import java.util.Set;
  * Isolating loader which delegates most of its work to the IsolatingClassLoader.
  */
 class IsolatingLoader implements Loader {
-  private final IsolationLevel isolationLevel;
-  private final List<URI> classpath;
   private final IsolatingClassLoader classloader;
 
-  IsolatingLoader(List<URI> classpath, OriginRestriction originRestriction, IsolationLevel isolationLevel, Set<GlobMatcher> parentPreferredClassPatterns,
-      Set<GlobMatcher> whitelistedClassPatterns, Set<GlobMatcher> blacklistedClassPatterns) {
-    this.isolationLevel = isolationLevel;
-    this.classpath = classpath;
-
+  IsolatingLoader(List<URI> classpath, OriginRestriction originRestriction,
+      List<ParentRelationship> parentRelationships) {
     URL[] classpathUrls = new URL[classpath.size()];
     for (int i = 0; i < classpathUrls.length; i++) {
       try {
@@ -42,8 +37,7 @@ class IsolatingLoader implements Loader {
       }
     }
 
-    classloader = new IsolatingClassLoader(classpathUrls, getClass().getClassLoader(), isolationLevel,
-        parentPreferredClassPatterns, whitelistedClassPatterns, blacklistedClassPatterns);
+    classloader = new IsolatingClassLoader(classpathUrls, parentRelationships);
   }
 
   @Override

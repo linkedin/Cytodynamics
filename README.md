@@ -13,7 +13,9 @@ code.
 Loader loader = LoaderBuilder 
     .anIsolatingLoader() 
     .withClasspath(new File("myjar.jar").getUri()) 
-    .withIsolationLevel(IsolationLevel.FULL) 
+    .addParentRelationship(ParentRelationshipBuilder.builder()
+        .withIsolationLevel(IsolationLevel.FULL)
+        .build())
     .build(); 
  
 MyApi myApiImpl = loader.newInstanceOf(MyApi.class, "com.myapi.MyApiImpl"); 
@@ -64,12 +66,14 @@ Classes can also be whitelisted or blacklisted using glob-style patterns, making
 the loaded code:
 
 ```java
-    Loader loader = LoaderBuilder
-        .anIsolatingLoader()
-        .withClasspath(new File("myjar.jar").getUri())
+Loader loader = LoaderBuilder
+    .anIsolatingLoader()
+    .withClasspath(new File("myjar.jar").getUri())
+    .addParentRelationship(ParentRelationshipBuilder.builder() 
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("com.example.*")
-        .build();
+        .build())
+    .build();
 ```
 
 Building
