@@ -58,31 +58,35 @@ public class OriginRestrictionTest {
         .allowingGlobPattern(ALLOWED_JAR_LOCATION);
 
     // Shouldn't be able to load a class through a redirect
-    Loader loader = LoaderBuilder
+    ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withClasspath(Collections.singletonList(new URI(ALLOWED_JAR_LOCATION)))
         .withOriginRestriction(allowOnlyLocalhost)
-        .addParentRelationship(ParentRelationshipBuilder.builder()
+        .withPrimaryDelegate(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
             .build())
         .build();
 
-    Class clazz = loader.loadClass(Object.class, "org.apache.log4j.Logger");
-    assertNull(clazz);
+    try {
+      loader.loadClass("org.apache.log4j.Logger");
+      fail("Expected to get a ClassNotFoundException, since it is not allowed to ");
+    } catch (ClassNotFoundException e) {
+      // expected to reach here
+    }
 
     // Should be able to load the class using the original URL
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withClasspath(Collections.singletonList(new URI(REDIRECTED_JAR_LOCATION)))
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .addParentRelationship(ParentRelationshipBuilder.builder()
+        .withPrimaryDelegate(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
             .build())
         .build();
 
-    clazz = loader.loadClass(Object.class, "org.apache.log4j.Logger");
+    Class<?> clazz = loader.loadClass("org.apache.log4j.Logger");
     assertNotNull(clazz);
 
     // Stop HTTP server
