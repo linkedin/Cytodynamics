@@ -10,22 +10,22 @@ Simplicity. Cytodynamics is a zero-dependency library that allows one to dynamic
 code.
 
 ```java
-ClassLoader loader = LoaderBuilder 
-    .anIsolatingLoader() 
-    .withClasspath(new File("myjar.jar").getUri()) 
-    .withPrimaryDelegate(DelegateRelationshipBuilder.builder()
+ClassLoader loader = LoaderBuilder
+    .anIsolatingLoader()
+    .withClasspath(new File("myjar.jar").getUri())
+    .withParentRelationship(ParentRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
         .build())
-    .build(); 
+    .build();
  
-MyApi myApiImpl = (MyApi) loader.loadClass("com.myapi.MyApiImpl").newInstance(); 
+MyApi myApiImpl = (MyApi) loader.loadClass("com.myapi.MyApiImpl").newInstance();
 
 myApiImpl.doIt();
 ```
 
 In contrast with other dynamic classloading systems, Cytodynamics also allows for isolating the child classloader from
-parent (delegate) dependencies. This avoids issues where loaded code depends on classes that are present in the parent
-classloader, which can break whenever these classes are updated.
+parent dependencies. This avoids issues where loaded code depends on classes that are present in the parent classloader,
+which can break whenever these classes are updated.
 
 For example, if the parent application uses Guava version x and the loaded code depends on those classes being present,
 when the parent application updates to a later version, this can break if the new version is not binary compatible. In
@@ -39,9 +39,9 @@ versions of the same code can be loaded concurrently, allowing for runtime swap 
 Classloader isolation
 ---------------------
 
-As mentioned earlier, Cytodynamics supports classloader isolation. The delegate classloader is always isolated from the
+As mentioned earlier, Cytodynamics supports classloader isolation. The parent classloader is always isolated from the
 classes contained in the child classloader (other than classes explicitly loaded through the Cytodynamics loader), but
-the child classloader can also be isolated from the classes in the delegate classloader.
+the child classloader can also be isolated from the classes in the parent classloader.
 
 Classes can be annotated so that they are visible in the child classloader, as follows:
 
@@ -56,8 +56,8 @@ When loading classes, classes annotated with the `@Api` annotation are always vi
 
 Cytodynamics supports three isolation modes: `NONE`, `TRANSITIONAL`, and `FULL`.
 
-In `FULL` isolation mode, no classes from the delegate classloader are visible, except for classes annotated with `@Api`
-and classes that have been whitelisted. In the `NONE` isolation mode, all classes from the delegate classloader are
+In `FULL` isolation mode, no classes from the parent classloader are visible, except for classes annotated with `@Api`
+and classes that have been whitelisted. In the `NONE` isolation mode, all classes from the parent classloader are
 visible to the child classloader (this is the default behavior when creating a classloader in Java). `TRANSITIONAL` mode
 behaves like the `NONE` mode, but logs accesses to classes that would not be visible in the `FULL` mode, as to make
 transitions between classloader isolation levels smoother.
@@ -69,7 +69,7 @@ the loaded code:
 ClassLoader loader = LoaderBuilder
     .anIsolatingLoader()
     .withClasspath(new File("myjar.jar").getUri())
-    .withPrimaryDelegate(DelegateRelationshipBuilder.builder() 
+    .withParentRelationship(ParentRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("com.example.*")
         .build())

@@ -15,13 +15,12 @@ import java.util.List;
 
 
 /**
- * Loader builder fluent interface, used to build an isolated classloader with a given classpath and relationships to
- * the delegate classloader(s).
+ * Loader builder fluent interface, used to build an isolated classloader.
  */
 public final class LoaderBuilder {
   private final List<URI> classpath = new ArrayList<>();
   private OriginRestriction originRestriction = null;
-  private DelegateRelationship primaryDelegate = null;
+  private ParentRelationship parentRelationship = null;
   private final List<ClassLoader> fallbackDelegates = new ArrayList<>();
 
   private LoaderBuilder() {
@@ -58,12 +57,12 @@ public final class LoaderBuilder {
   }
 
   /**
-   * Set the primary delegate relationship for the loader. This will be checked first when trying to load a class.
+   * Set the parent relationship for the loader. This will be checked first when trying to load a class.
    *
-   * @param primaryDelegate primary {@link DelegateRelationship} to use for the loader
+   * @param parentRelationship primary {@link ParentRelationship} to use for the loader
    */
-  public LoaderBuilder withPrimaryDelegate(DelegateRelationship primaryDelegate) {
-    this.primaryDelegate = primaryDelegate;
+  public LoaderBuilder withParentRelationship(ParentRelationship parentRelationship) {
+    this.parentRelationship = parentRelationship;
     return this;
   }
 
@@ -72,7 +71,7 @@ public final class LoaderBuilder {
    * relationship, then the loader will attempt to find it in the fallback(s).
    * The fallback delegates will be used in the order that they are added to this builder.
    *
-   * @param fallbackDelegate a fallback {@link DelegateRelationship} to use for the loader
+   * @param fallbackDelegate a fallback {@link ParentRelationship} to use for the loader
    */
   public LoaderBuilder addFallbackDelegate(ClassLoader fallbackDelegate) {
     this.fallbackDelegates.add(fallbackDelegate);
@@ -86,10 +85,10 @@ public final class LoaderBuilder {
    */
   public ClassLoader build() {
     URL[] classpathUrls = validateAndGetClassPathUrls();
-    if (this.primaryDelegate == null) {
-      throw new RuntimeException("No primary delegate set; please use withPrimaryDelegate() to set one");
+    if (this.parentRelationship == null) {
+      throw new RuntimeException("No parent relationship set; please use withParentRelationship() to set one");
     }
-    return new IsolatingClassLoader(classpathUrls, this.primaryDelegate, this.fallbackDelegates);
+    return new IsolatingClassLoader(classpathUrls, this.parentRelationship, this.fallbackDelegates);
   }
 
   private URL[] validateAndGetClassPathUrls() {
