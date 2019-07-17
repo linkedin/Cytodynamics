@@ -69,7 +69,7 @@ the loaded code:
 ClassLoader loader = LoaderBuilder
     .anIsolatingLoader()
     .withClasspath(new File("myjar.jar").getUri())
-    .withPrimaryDeleagate(DelegateRelationshipBuilder.builder() 
+    .withPrimaryDelegate(DelegateRelationshipBuilder.builder() 
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("com.example.*")
         .build())
