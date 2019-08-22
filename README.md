@@ -13,7 +13,7 @@ code.
 ClassLoader loader = LoaderBuilder
     .anIsolatingLoader()
     .withClasspath(new File("myjar.jar").getUri())
-    .withParentRelationship(ParentRelationshipBuilder.builder()
+    .withParentRelationship(DelegateRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
         .build())
     .build();
@@ -69,7 +69,7 @@ the loaded code:
 ClassLoader loader = LoaderBuilder
     .anIsolatingLoader()
     .withClasspath(new File("myjar.jar").getUri())
-    .withParentRelationship(ParentRelationshipBuilder.builder()
+    .withParentRelationship(DelegateRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("com.example.*")
         .build())

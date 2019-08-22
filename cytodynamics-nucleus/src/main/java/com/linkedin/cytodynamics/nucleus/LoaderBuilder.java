@@ -20,8 +20,8 @@ import java.util.List;
 public final class LoaderBuilder {
   private final List<URI> classpath = new ArrayList<>();
   private OriginRestriction originRestriction = null;
-  private ParentRelationship parentRelationship = null;
-  private final List<ClassLoader> fallbackDelegates = new ArrayList<>();
+  private DelegateRelationship parentRelationship = null;
+  private final List<DelegateRelationship> fallbackDelegates = new ArrayList<>();
 
   private LoaderBuilder() {
   }
@@ -57,11 +57,11 @@ public final class LoaderBuilder {
   }
 
   /**
-   * Set the parent relationship for the loader. This will be checked first when trying to load a class.
+   * Set the delegate relationship for the loader. This will be checked first when trying to load a class.
    *
-   * @param parentRelationship primary {@link ParentRelationship} to use for the loader
+   * @param parentRelationship primary {@link DelegateRelationship} to use for the loader
    */
-  public LoaderBuilder withParentRelationship(ParentRelationship parentRelationship) {
+  public LoaderBuilder withParentRelationship(DelegateRelationship parentRelationship) {
     this.parentRelationship = parentRelationship;
     return this;
   }
@@ -71,9 +71,9 @@ public final class LoaderBuilder {
    * relationship, then the loader will attempt to find it in the fallback(s).
    * The fallback delegates will be used in the order that they are added to this builder.
    *
-   * @param fallbackDelegate a fallback {@link ParentRelationship} to use for the loader
+   * @param fallbackDelegate a fallback {@link DelegateRelationship} to use for the loader
    */
-  public LoaderBuilder addFallbackDelegate(ClassLoader fallbackDelegate) {
+  public LoaderBuilder addFallbackDelegate(DelegateRelationship fallbackDelegate) {
     this.fallbackDelegates.add(fallbackDelegate);
     return this;
   }
