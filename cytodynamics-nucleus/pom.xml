@@ -24,7 +24,7 @@
   </build>
   <parent>
     <artifactId>cytodynamics-parent</artifactId>
-    <groupId>com.linkedin</groupId>
+    <groupId>com.linkedin.cytodynamics</groupId>
     <version>0.1.0</version>
   </parent>
 
