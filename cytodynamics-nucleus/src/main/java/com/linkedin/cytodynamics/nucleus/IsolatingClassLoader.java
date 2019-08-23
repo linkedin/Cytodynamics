@@ -7,7 +7,7 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
@@ -104,31 +104,31 @@ class IsolatingClassLoader extends URLClassLoader {
   }
 
   /**
-   * TODO: should resources be isolated as well?
-   * Throwing an {@link UnsupportedOperationException} for now to prevent unexpected resource loading behavior.
+   * This only loads resources from the classpath associated with this classloader. It does not load resources from
+   * any parent classloaders.
+   *
+   * TODO: Is it useful to be able to whitelist certain resources to be loaded from a parent?
    */
   @Override
   public URL getResource(String name) {
-    throw new UnsupportedOperationException("IsolatingClassLoader does not currently support resource loading");
+    return findResource(name);
   }
 
   /**
-   * TODO: should resources be isolated as well?
-   * Throwing an {@link UnsupportedOperationException} for now to prevent unexpected resource loading behavior.
+   * This only loads resources from the classpath associated with this classloader. It does not load resources from
+   * any parent classloaders.
+   *
+   * TODO: Is it useful to be able to whitelist certain resources to be loaded from a parent?
    */
   @Override
-  public Enumeration<URL> getResources(String name) {
-    throw new UnsupportedOperationException("IsolatingClassLoader does not currently support resource loading");
+  public Enumeration<URL> getResources(String name) throws IOException {
+    return findResources(name);
   }
 
-  /**
-   * TODO: should resources be isolated as well?
-   * Throwing an {@link UnsupportedOperationException} for now to prevent unexpected resource loading behavior.
+  /*
+   * It is currently unnecessary to override getResourceAsStream, since it uses getResource to get a resource, and
+   * getResource is overridden by this class.
    */
-  @Override
-  public InputStream getResourceAsStream(String name) {
-    throw new UnsupportedOperationException("IsolatingClassLoader does not currently support resource loading");
-  }
 
   /**
    * Try to load a class corresponding to an individual {@link DelegateRelationship}.
