@@ -7,6 +7,8 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.exception.InvalidBuilderParametersException;
+import com.linkedin.cytodynamics.exception.OriginValidationException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -86,30 +88,36 @@ public final class LoaderBuilder {
   public ClassLoader build() {
     URL[] classpathUrls = validateAndGetClassPathUrls();
     if (this.parentRelationship == null) {
-      throw new RuntimeException("No parent relationship set; please use withParentRelationship() to set one");
+      throw new InvalidBuilderParametersException(
+          "No parent relationship set; please use withParentRelationship() to set one");
     }
     return new IsolatingClassLoader(classpathUrls, this.parentRelationship, this.fallbackDelegates);
   }
 
   private URL[] validateAndGetClassPathUrls() {
     if (originRestriction == null) {
-      throw new RuntimeException("No origin restriction set, use OriginRestriction.allowByDefault() if no restriction is desired");
+      throw new InvalidBuilderParametersException(
+          "No origin restriction set, use OriginRestriction.allowByDefault() if no restriction is desired");
     }
 
     URL[] classpathUrls = new URL[classpath.size()];
     for (int i = 0; i < classpathUrls.length; i++) {
-      try {
-        URL url = classpath.get(i).toURL();
-
-        if (!originRestriction.isAllowed(url)) {
-          throw new SecurityException("Loading classes from " + url + " is forbidden by the origin restriction. Aborting.");
-        } else {
-          classpathUrls[i] = url;
-        }
-      } catch (MalformedURLException e) {
-        throw new RuntimeException(e);
+      URL url = toURL(classpath.get(i));
+      if (!originRestriction.isAllowed(url)) {
+        throw new OriginValidationException(
+            "Loading classes from " + url + " is forbidden by the origin restriction. Aborting.");
+      } else {
+        classpathUrls[i] = url;
       }
     }
     return classpathUrls;
+  }
+
+  private static URL toURL(URI uri) {
+    try {
+      return uri.toURL();
+    } catch (MalformedURLException e) {
+      throw new InvalidBuilderParametersException("Unable to convert URI " + uri + " to a URL", e);
+    }
   }
 }
