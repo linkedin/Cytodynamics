@@ -13,32 +13,35 @@ import java.util.Set;
 /**
  * Contains objects and configuration for an individual parent classloading step for {@link IsolatingClassLoader}.
  */
-public class ParentRelationship {
-  private final ClassLoader parentClassLoader;
+public class DelegateRelationship {
+  private final ClassLoader delegateClassLoader;
   private final IsolationLevel isolationLevel;
-  private final Set<GlobMatcher> parentPreferredClassPatterns;
+  private final Set<GlobMatcher> delegatePreferredClassPatterns;
   private final Set<GlobMatcher> blacklistedClassPatterns;
   private final Set<GlobMatcher> whitelistedClassPatterns;
 
-  ParentRelationship(ClassLoader parent, IsolationLevel isolationLevel, Set<GlobMatcher> parentPreferredClassPatterns,
-      Set<GlobMatcher> blacklistedClassPatterns, Set<GlobMatcher> whitelistedClassPatterns) {
-    this.parentClassLoader = parent;
+  DelegateRelationship(ClassLoader delegateClassLoader,
+      IsolationLevel isolationLevel,
+      Set<GlobMatcher> delegatePreferredClassPatterns,
+      Set<GlobMatcher> blacklistedClassPatterns,
+      Set<GlobMatcher> whitelistedClassPatterns) {
+    this.delegateClassLoader = delegateClassLoader;
     this.isolationLevel = isolationLevel;
-    this.parentPreferredClassPatterns = parentPreferredClassPatterns;
+    this.delegatePreferredClassPatterns = delegatePreferredClassPatterns;
     this.blacklistedClassPatterns = blacklistedClassPatterns;
     this.whitelistedClassPatterns = whitelistedClassPatterns;
   }
 
-  public ClassLoader getParentClassLoader() {
-    return parentClassLoader;
+  public ClassLoader getDelegateClassLoader() {
+    return delegateClassLoader;
   }
 
   public IsolationLevel getIsolationLevel() {
     return isolationLevel;
   }
 
-  public Set<GlobMatcher> getParentPreferredClassPatterns() {
-    return parentPreferredClassPatterns;
+  public Set<GlobMatcher> getDelegatePreferredClassPatterns() {
+    return delegatePreferredClassPatterns;
   }
 
   public Set<GlobMatcher> getBlacklistedClassPatterns() {

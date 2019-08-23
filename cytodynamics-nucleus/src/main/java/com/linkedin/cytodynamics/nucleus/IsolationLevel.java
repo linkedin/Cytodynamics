@@ -12,7 +12,7 @@ package com.linkedin.cytodynamics.nucleus;
  */
 public enum IsolationLevel {
   /**
-   * No isolation from the parent classloader, all classes available in the parent "leak" into the child classloader.
+   * No isolation from delegate classloader, all classes available in the delegate "leak" into the child classloader.
    */
   NONE,
   /**

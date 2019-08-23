@@ -10,15 +10,15 @@ Simplicity. Cytodynamics is a zero-dependency library that allows one to dynamic
 code.
 
 ```java
-Loader loader = LoaderBuilder 
-    .anIsolatingLoader() 
-    .withClasspath(new File("myjar.jar").getUri()) 
-    .addParentRelationship(ParentRelationshipBuilder.builder()
+ClassLoader loader = LoaderBuilder
+    .anIsolatingLoader()
+    .withClasspath(new File("myjar.jar").getUri())
+    .withParentRelationship(DelegateRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
         .build())
-    .build(); 
+    .build();
  
-MyApi myApiImpl = loader.newInstanceOf(MyApi.class, "com.myapi.MyApiImpl"); 
+MyApi myApiImpl = (MyApi) loader.loadClass("com.myapi.MyApiImpl").newInstance();
 
 myApiImpl.doIt();
 ```
@@ -66,10 +66,10 @@ Classes can also be whitelisted or blacklisted using glob-style patterns, making
 the loaded code:
 
 ```java
-Loader loader = LoaderBuilder
+ClassLoader loader = LoaderBuilder
     .anIsolatingLoader()
     .withClasspath(new File("myjar.jar").getUri())
-    .addParentRelationship(ParentRelationshipBuilder.builder() 
+    .withParentRelationship(DelegateRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
         .addWhitelistedClassPattern("com.example.*")
         .build())
