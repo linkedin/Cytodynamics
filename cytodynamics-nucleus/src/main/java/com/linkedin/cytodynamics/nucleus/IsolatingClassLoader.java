@@ -13,6 +13,7 @@ import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 
 /**
@@ -151,8 +152,8 @@ class IsolatingClassLoader extends URLClassLoader {
 
     // Is the class blacklisted from being loaded from the delegate?
     boolean isBlacklisted = false;
-    for (GlobMatcher blacklistedClassPattern : delegateRelationship.getBlacklistedClassPatterns()) {
-      if (blacklistedClassPattern.matches(name)) {
+    for (Predicate<String> blacklistedClassPredicate : delegateRelationship.getBlacklistedClassPredicates()) {
+      if (blacklistedClassPredicate.test(name)) {
         isBlacklisted = true;
         break;
       }
@@ -168,8 +169,9 @@ class IsolatingClassLoader extends URLClassLoader {
           return delegateClass;
         } else {
           // Is it delegate preferred?
-          for (GlobMatcher delegatePreferredClassPattern : delegateRelationship.getDelegatePreferredClassPatterns()) {
-            if (delegatePreferredClassPattern.matches(name)) {
+          for (Predicate<String> delegatePreferredClassPredicate :
+              delegateRelationship.getDelegatePreferredClassPredicates()) {
+            if (delegatePreferredClassPredicate.test(name)) {
               return delegateClass;
             }
           }
@@ -191,8 +193,8 @@ class IsolatingClassLoader extends URLClassLoader {
 
     // Is it whitelisted and present in the delegate class loader but hidden due to the isolation behavior?
     if (returnValue == null && delegateClass != null) {
-      for (GlobMatcher whitelistedClassPattern : delegateRelationship.getWhitelistedClassPatterns()) {
-        if (whitelistedClassPattern.matches(name)) {
+      for (Predicate<String> whitelistedClassPredicate : delegateRelationship.getWhitelistedClassPredicates()) {
+        if (whitelistedClassPredicate.test(name)) {
           return delegateClass;
         }
       }

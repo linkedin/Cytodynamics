@@ -5,15 +5,16 @@
  * Licensed under the BSD 2-Clause License (the "License").
  * See LICENSE in the project root for license information.
  */
-package com.linkedin.cytodynamics.nucleus;
+package com.linkedin.cytodynamics.matcher;
 
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 
 /**
  * Simple wrapper over regexes for glob matching.
  */
-class GlobMatcher {
+public class GlobMatcher implements Predicate<String> {
   private final Pattern pattern;
 
   public GlobMatcher(String globPattern) {
@@ -52,7 +53,8 @@ class GlobMatcher {
     pattern = Pattern.compile(regexPattern);
   }
 
-  public boolean matches(String toMatch) {
+  @Override
+  public boolean test(String toMatch) {
     return pattern.matcher(toMatch).matches();
   }
 }

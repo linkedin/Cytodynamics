@@ -8,6 +8,7 @@
 package com.linkedin.cytodynamics.nucleus;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 
 /**
@@ -16,20 +17,20 @@ import java.util.Set;
 public class DelegateRelationship {
   private final ClassLoader delegateClassLoader;
   private final IsolationLevel isolationLevel;
-  private final Set<GlobMatcher> delegatePreferredClassPatterns;
-  private final Set<GlobMatcher> blacklistedClassPatterns;
-  private final Set<GlobMatcher> whitelistedClassPatterns;
+  private final Set<Predicate<String>> delegatePreferredClassPredicates;
+  private final Set<Predicate<String>> blacklistedClassPredicates;
+  private final Set<Predicate<String>> whitelistedClassPredicates;
 
   DelegateRelationship(ClassLoader delegateClassLoader,
       IsolationLevel isolationLevel,
-      Set<GlobMatcher> delegatePreferredClassPatterns,
-      Set<GlobMatcher> blacklistedClassPatterns,
-      Set<GlobMatcher> whitelistedClassPatterns) {
+      Set<Predicate<String>> delegatePreferredClassPredicates,
+      Set<Predicate<String>> blacklistedClassPredicates,
+      Set<Predicate<String>> whitelistedClassPredicates) {
     this.delegateClassLoader = delegateClassLoader;
     this.isolationLevel = isolationLevel;
-    this.delegatePreferredClassPatterns = delegatePreferredClassPatterns;
-    this.blacklistedClassPatterns = blacklistedClassPatterns;
-    this.whitelistedClassPatterns = whitelistedClassPatterns;
+    this.delegatePreferredClassPredicates = delegatePreferredClassPredicates;
+    this.blacklistedClassPredicates = blacklistedClassPredicates;
+    this.whitelistedClassPredicates = whitelistedClassPredicates;
   }
 
   public ClassLoader getDelegateClassLoader() {
@@ -40,15 +41,15 @@ public class DelegateRelationship {
     return isolationLevel;
   }
 
-  public Set<GlobMatcher> getDelegatePreferredClassPatterns() {
-    return delegatePreferredClassPatterns;
+  public Set<Predicate<String>> getDelegatePreferredClassPredicates() {
+    return delegatePreferredClassPredicates;
   }
 
-  public Set<GlobMatcher> getBlacklistedClassPatterns() {
-    return blacklistedClassPatterns;
+  public Set<Predicate<String>> getBlacklistedClassPredicates() {
+    return blacklistedClassPredicates;
   }
 
-  public Set<GlobMatcher> getWhitelistedClassPatterns() {
-    return whitelistedClassPatterns;
+  public Set<Predicate<String>> getWhitelistedClassPredicates() {
+    return whitelistedClassPredicates;
   }
 }
