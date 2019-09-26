@@ -110,8 +110,16 @@ public class TestDynamicLoad {
             .build())
         .build();
 
-    TestInterface implementation = (TestInterface) loader.loadClass(TestInterfaceImpl.class.getName()).newInstance();
+    Class<?> testInterfaceImplClass = loader.loadClass(TestInterfaceImpl.class.getName());
+    // try to load the class again, should return the same class
+    assertEquals(loader.loadClass(TestInterfaceImpl.class.getName()), testInterfaceImplClass);
+    TestInterface implementation = (TestInterface) testInterfaceImplClass.newInstance();
     assertEquals(implementation.getValue(), "A");
+    // try to load the class again after loading an instance
+    assertEquals(loader.loadClass(TestInterfaceImpl.class.getName()), testInterfaceImplClass);
+    // load a different class
+    implementation = (TestInterface) loader.loadClass(TestInterfaceAOnlyImpl.class.getName()).newInstance();
+    assertEquals(implementation.getValue(), "A-only");
   }
 
   @Test
