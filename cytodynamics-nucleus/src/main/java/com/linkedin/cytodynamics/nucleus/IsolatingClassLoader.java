@@ -86,27 +86,35 @@ class IsolatingClassLoader extends URLClassLoader {
   };
 
   @Override
-  public Class<?> loadClass(String name) throws ClassNotFoundException {
+  protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
     synchronized (getClassLoadingLock(name)) {
-      Class<?> alreadyLoadedClass = findLoadedClass(name);
-      if (alreadyLoadedClass != null) {
-        return alreadyLoadedClass;
+      // check if the class has already been loaded
+      Class<?> cl = findLoadedClass(name);
+
+      if (cl == null) {
+        // try to load the class using the parent
+        cl = tryLoadClassWithDelegate(name, this.parentRelationship);
       }
 
-      Class<?> classFromParent = tryLoadClassWithDelegate(name, this.parentRelationship);
-      if (classFromParent != null) {
-        return classFromParent;
-      }
-
-      for (DelegateRelationship fallbackDelegate : this.fallbackDelegates) {
-        Class<?> classFromFallback = tryLoadClassWithDelegate(name, fallbackDelegate);
-        if (classFromFallback != null) {
-          return classFromFallback;
+      if (cl == null) {
+        // try to load the class using a fallback
+        for (DelegateRelationship fallbackDelegate : this.fallbackDelegates) {
+          cl = tryLoadClassWithDelegate(name, fallbackDelegate);
+          if (cl != null) {
+            break;
+          }
         }
       }
 
-      // got through parent and fallback delegates but could not find the class
-      throw new ClassNotFoundException("Could not load class for name " + name);
+      if (cl != null) {
+        if (resolve) {
+          resolveClass(cl);
+        }
+        return cl;
+      } else {
+        // got through parent and fallback delegates but could not find the class
+        throw new ClassNotFoundException("Could not load class for name " + name);
+      }
     }
   }
 
