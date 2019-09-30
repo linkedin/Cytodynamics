@@ -10,16 +10,21 @@ package com.linkedin.cytodynamics.test;
 import com.linkedin.cytodynamics.nucleus.IsolationLevel;
 import com.linkedin.cytodynamics.nucleus.LoaderBuilder;
 import com.linkedin.cytodynamics.nucleus.OriginRestriction;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +41,8 @@ import static org.testng.Assert.fail;
  * FIXME Document me!
  */
 public class TestDynamicLoad {
+  private static final String DATA_TXT_RESOURCE_NAME = "data.txt";
+
   private static File findBaseDirectory() {
     File currentDirectory;
     try {
@@ -122,6 +129,61 @@ public class TestDynamicLoad {
     // load a different class
     implementation = (TestInterface) loader.loadClass(TestInterfaceAOnlyImpl.class.getName()).newInstance();
     assertEquals(implementation.getValue(), "A-only");
+  }
+
+  @Test
+  public void testLoadResources() throws IOException {
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .build())
+        .build();
+
+    URL dataUrl = loader.getResource(DATA_TXT_RESOURCE_NAME);
+    assertEquals(readLine(dataUrl.openStream()), "A");
+
+    assertEquals(readLine(loader.getResourceAsStream(DATA_TXT_RESOURCE_NAME)), "A");
+
+    Enumeration<URL> dataUrls = loader.getResources(DATA_TXT_RESOURCE_NAME);
+    // should only have a single resource
+    assertEquals(readLine(dataUrls.nextElement().openStream()), "A");
+    assertFalse(dataUrls.hasMoreElements());
+  }
+
+  /**
+   * This tests that resources will only be loaded from the direct classpath and not the parent nor the fallback.
+   */
+  @Test
+  public void testLoadResourcesIsolation() throws IOException {
+    // parent and fallback can have the same classpath, since we are just testing that they aren't used
+    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, null);
+    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(parentClassLoaderA)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .addFallbackDelegate(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(fallbackClassLoaderA)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+
+    URL dataUrl = loader.getResource(DATA_TXT_RESOURCE_NAME);
+    assertEquals(readLine(dataUrl.openStream()), "B");
+
+    assertEquals(readLine(loader.getResourceAsStream(DATA_TXT_RESOURCE_NAME)), "B");
+
+    Enumeration<URL> dataUrls = loader.getResources(DATA_TXT_RESOURCE_NAME);
+    // should only have a single resource
+    assertEquals(readLine(dataUrls.nextElement().openStream()), "B");
+    assertFalse(dataUrls.hasMoreElements());
   }
 
   @Test
@@ -633,5 +695,12 @@ public class TestDynamicLoad {
         .collect(Collectors.toList());
     assertEquals(foundInterfaces.size(), 1);
     return foundInterfaces.iterator().next();
+  }
+
+  private static String readLine(InputStream inputStream) throws IOException {
+    try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.defaultCharset());
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+      return bufferedReader.readLine();
+    }
   }
 }
