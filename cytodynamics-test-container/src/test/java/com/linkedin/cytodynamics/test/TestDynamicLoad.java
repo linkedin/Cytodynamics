@@ -509,6 +509,7 @@ public class TestDynamicLoad {
             // only load concrete classes from fallback; don't load API classes from fallback
             .addDelegatePreferredClassPattern(TestInterfaceImpl.class.getName())
             .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
+            .addBlacklistedClassPattern(TestInterface.class.getName())
             .build())
         .build();
 

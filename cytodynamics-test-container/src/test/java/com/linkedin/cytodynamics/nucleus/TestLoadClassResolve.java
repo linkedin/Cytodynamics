@@ -31,9 +31,11 @@ public class TestLoadClassResolve {
 
   @BeforeMethod
   public void setup() throws Exception {
+    URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
-    ClassLoader parent = new URLClassLoader(new URL[]{testApiJarURL}, null);
-    ClassLoader fallback = new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader parent = new URLClassLoader(new URL[]{cytodynamics, testApiJarURL}, null);
+    ClassLoader fallback =
+        new URLClassLoader(new URL[]{cytodynamics, testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -42,13 +44,13 @@ public class TestLoadClassResolve {
             .withDelegateClassLoader(parent)
             .withIsolationLevel(IsolationLevel.FULL)
             .addDelegatePreferredClassPattern("java.*")
-            // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
-            .addDelegatePreferredClassPattern(TestInterface.class.getName())
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallback)
             .withIsolationLevel(IsolationLevel.FULL)
+            // only load concrete classes from fallback; don't load API classes from fallback
             .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
+            .addBlacklistedClassPattern(TestInterface.class.getName())
             .build())
         .build();
     /*
