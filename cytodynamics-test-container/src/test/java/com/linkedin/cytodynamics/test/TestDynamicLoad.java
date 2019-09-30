@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import com.linkedin.cytodynamics.nucleus.DelegateRelationshipBuilder;
 import org.testng.annotations.Test;
 
+import static com.linkedin.cytodynamics.util.JarUtil.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -42,58 +43,6 @@ import static org.testng.Assert.fail;
  */
 public class TestDynamicLoad {
   private static final String DATA_TXT_RESOURCE_NAME = "data.txt";
-
-  private static File findBaseDirectory() {
-    File currentDirectory;
-    try {
-      currentDirectory = new File(".").getCanonicalFile();
-    } catch (IOException e) {
-      fail("Failed to find the base directory", e);
-      return null;
-    }
-
-    File testADirectory = new File(currentDirectory, "cytodynamics-test-a");
-    if (testADirectory.exists() && testADirectory.isDirectory()) {
-      return currentDirectory;
-    }
-
-    while (currentDirectory.getParentFile() != null) {
-      currentDirectory = currentDirectory.getParentFile();
-
-      testADirectory = new File(currentDirectory, "cytodynamics-test-a");
-      if (testADirectory.exists() && testADirectory.isDirectory()) {
-        return currentDirectory;
-      }
-    }
-
-    fail("Failed to find the base directory");
-    return null;
-  }
-
-  private static URI getJarUri(String moduleName) {
-    File targetDir = new File(new File(findBaseDirectory(), moduleName), "target");
-
-    if (!targetDir.exists()) {
-      fail(String.format("No target directory exists for module %s", moduleName));
-    }
-
-    File[] filesInTargetDir = targetDir.listFiles();
-    if (filesInTargetDir == null) {
-      fail(String.format("Unable to access any files in %s; make sure it is a directory", targetDir));
-    }
-
-    for (File fileInTargetDir : filesInTargetDir) {
-      if (fileInTargetDir.getName().startsWith(moduleName) &&
-          fileInTargetDir.getName().endsWith(".jar") &&
-          !fileInTargetDir.getName().contains("sources") &&
-          !fileInTargetDir.getName().contains("javadoc")) {
-        return fileInTargetDir.toURI();
-      }
-    }
-
-    fail(String.format("Failed to find the jar for module %s in the target directory %s", moduleName, targetDir));
-    return null;
-  }
 
   @Test
   public void testStaticLoad() {
@@ -136,7 +85,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .build())
@@ -159,12 +108,12 @@ public class TestDynamicLoad {
   @Test
   public void testLoadResourcesIsolation() throws IOException {
     // parent and fallback can have the same classpath, since we are just testing that they aren't used
-    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, null);
-    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, null);
+    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(parentClassLoaderA)
             .withIsolationLevel(IsolationLevel.NONE)

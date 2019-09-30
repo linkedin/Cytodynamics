@@ -108,7 +108,7 @@ class IsolatingClassLoader extends URLClassLoader {
 
       if (cl != null) {
         if (resolve) {
-          resolveClass(cl);
+          doResolveClass(cl);
         }
         return cl;
       } else {
@@ -216,5 +216,12 @@ class IsolatingClassLoader extends URLClassLoader {
     int behaviorIndex = (hasDelegateClass ? 0b10 : 0b00) | (hasChildClass ? 0b01 : 0b00);
 
     return ISOLATION_BEHAVIORS[isolationLevel.ordinal()][behaviorIndex];
+  }
+
+  /**
+   * Package-private for testing purposes, since resolveClass is protected within {@link ClassLoader}.
+   */
+  void doResolveClass(Class<?> cl) {
+    resolveClass(cl);
   }
 }
