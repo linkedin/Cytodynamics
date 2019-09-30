@@ -506,7 +506,7 @@ public class TestDynamicLoad {
             .withDelegateClassLoader(partialDelegation)
             .withIsolationLevel(IsolationLevel.FULL)
             .addDelegatePreferredClassPattern("java.*")
-            // only allow concrete classes to be loaded directly from fallback
+            // only load concrete classes from fallback; don't load API classes from fallback
             .addDelegatePreferredClassPattern(TestInterfaceImpl.class.getName())
             .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
             .build())
