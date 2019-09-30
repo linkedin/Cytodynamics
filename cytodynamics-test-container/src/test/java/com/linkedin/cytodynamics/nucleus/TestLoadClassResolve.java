@@ -51,7 +51,10 @@ public class TestLoadClassResolve {
             .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
             .build())
         .build();
-    // cast to IsolatingClassLoader so we can call the protected loadClass directly; use a spy to verify method calls
+    /*
+     * Cast to IsolatingClassLoader so we can call the protected loadClass directly.
+     * Using a spy to verify method calls to resolveClass. It's unnecessary to actually mock resolveClass.
+     */
     this.isolatingClassLoader = spy((IsolatingClassLoader) loader);
   }
 
