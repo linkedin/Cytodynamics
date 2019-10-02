@@ -7,6 +7,7 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.matcher.GlobMatcher;
 import com.linkedin.cytodynamics.test.TestInterface;
 import com.linkedin.cytodynamics.test.TestInterfaceAOnlyImpl;
 import com.linkedin.cytodynamics.test.TestInterfaceImpl;
@@ -41,14 +42,14 @@ public class TestLoadClassResolve {
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(parent)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addDelegatePreferredClassPattern("java.*")
+            .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
             // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
-            .addDelegatePreferredClassPattern(TestInterface.class.getName())
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallback)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterfaceAOnlyImpl.class.getName()))
             .build())
         .build();
     /*

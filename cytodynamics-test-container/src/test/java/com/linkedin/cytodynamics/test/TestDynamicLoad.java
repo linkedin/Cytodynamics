@@ -166,9 +166,9 @@ public class TestDynamicLoad {
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addDelegatePreferredClassPattern("java.*")
+            .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
             // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
-            .addDelegatePreferredClassPattern(TestInterface.class.getName())
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .build();
 
@@ -381,7 +381,7 @@ public class TestDynamicLoad {
             .withDelegateClassLoader(fallbackClassLoaderB)
             // using NONE so that the class is loaded from here
             .withIsolationLevel(IsolationLevel.NONE)
-            .addDelegatePreferredClassPattern("java.*")
+            .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallbackClassLoaderA)
@@ -500,17 +500,17 @@ public class TestDynamicLoad {
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(commonParent)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addDelegatePreferredClassPattern(new GlobMatcher("java.*"))
+            .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
             // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
-            .addDelegatePreferredClassPattern(TestInterface.class.getName())
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(partialDelegation)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addDelegatePreferredClassPattern(new GlobMatcher("java.*"))
+            .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
             // only load concrete classes from fallback; don't load API classes from fallback
-            .addDelegatePreferredClassPattern(new GlobMatcher(TestInterfaceImpl.class.getName()))
-            .addDelegatePreferredClassPattern(new GlobMatcher(TestInterfaceAOnlyImpl.class.getName()))
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterfaceImpl.class.getName()))
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterfaceAOnlyImpl.class.getName()))
             .build())
         .build();
 
@@ -571,7 +571,7 @@ public class TestDynamicLoad {
   public void testParentPreferredBootstrapClass() throws Exception {
     ClassLoader loader = LoaderBuilder.anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new BootstrapClassPredicate())
