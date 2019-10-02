@@ -8,7 +8,7 @@
 package com.linkedin.cytodynamics.nucleus;
 
 import com.linkedin.cytodynamics.exception.CytodynamicsClassNotFoundException;
-import java.io.InputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
@@ -87,58 +87,66 @@ class IsolatingClassLoader extends URLClassLoader {
   };
 
   @Override
-  public Class<?> loadClass(String name) throws ClassNotFoundException {
+  protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
     synchronized (getClassLoadingLock(name)) {
-      Class<?> alreadyLoadedClass = findLoadedClass(name);
-      if (alreadyLoadedClass != null) {
-        return alreadyLoadedClass;
+      // check if the class has already been loaded
+      Class<?> cl = findLoadedClass(name);
+
+      if (cl == null) {
+        // try to load the class using the parent
+        cl = tryLoadClassWithDelegate(name, this.parentRelationship);
       }
 
-      Class<?> classFromParent = tryLoadClassWithDelegate(name, this.parentRelationship);
-      if (classFromParent != null) {
-        return classFromParent;
-      }
-
-      for (DelegateRelationship fallbackDelegate : this.fallbackDelegates) {
-        Class<?> classFromFallback = tryLoadClassWithDelegate(name, fallbackDelegate);
-        if (classFromFallback != null) {
-          return classFromFallback;
+      if (cl == null) {
+        // try to load the class using a fallback
+        for (DelegateRelationship fallbackDelegate : this.fallbackDelegates) {
+          cl = tryLoadClassWithDelegate(name, fallbackDelegate);
+          if (cl != null) {
+            break;
+          }
         }
       }
 
-      // got through parent and fallback delegates but could not find the class
-      throw new CytodynamicsClassNotFoundException(String.format(
-          "Could not fully load class for name %s. It is possible that the immediate class is found, but a class that "
-              + "it depends on cannot be found", name));
+      if (cl != null) {
+        if (resolve) {
+          doResolveClass(cl);
+        }
+        return cl;
+      } else {
+        // got through parent and fallback delegates but could not find the class
+        throw new CytodynamicsClassNotFoundException(String.format(
+            "Could not fully load class for name %s. It is possible that the immediate class is found, but a class that "
+                + "it depends on cannot be found", name));
+      }
     }
   }
 
   /**
-   * TODO: should resources be isolated as well?
-   * Throwing an {@link UnsupportedOperationException} for now to prevent unexpected resource loading behavior.
+   * This only loads resources from the classpath associated with this classloader. It does not load resources from
+   * any parent classloaders.
+   *
+   * TODO: Is it useful to be able to whitelist certain resources to be loaded from a parent?
    */
   @Override
   public URL getResource(String name) {
-    throw new UnsupportedOperationException("IsolatingClassLoader does not currently support resource loading");
+    return findResource(name);
   }
 
   /**
-   * TODO: should resources be isolated as well?
-   * Throwing an {@link UnsupportedOperationException} for now to prevent unexpected resource loading behavior.
+   * This only loads resources from the classpath associated with this classloader. It does not load resources from
+   * any parent classloaders.
+   *
+   * TODO: Is it useful to be able to whitelist certain resources to be loaded from a parent?
    */
   @Override
-  public Enumeration<URL> getResources(String name) {
-    throw new UnsupportedOperationException("IsolatingClassLoader does not currently support resource loading");
+  public Enumeration<URL> getResources(String name) throws IOException {
+    return findResources(name);
   }
 
-  /**
-   * TODO: should resources be isolated as well?
-   * Throwing an {@link UnsupportedOperationException} for now to prevent unexpected resource loading behavior.
+  /*
+   * It is currently unnecessary to override getResourceAsStream, since it uses getResource to get a resource, and
+   * getResource is overridden by this class.
    */
-  @Override
-  public InputStream getResourceAsStream(String name) {
-    throw new UnsupportedOperationException("IsolatingClassLoader does not currently support resource loading");
-  }
 
   /**
    * Try to load a class corresponding to an individual {@link DelegateRelationship}.
@@ -211,5 +219,12 @@ class IsolatingClassLoader extends URLClassLoader {
     int behaviorIndex = (hasDelegateClass ? 0b10 : 0b00) | (hasChildClass ? 0b01 : 0b00);
 
     return ISOLATION_BEHAVIORS[isolationLevel.ordinal()][behaviorIndex];
+  }
+
+  /**
+   * Package-private for testing purposes, since resolveClass is protected within {@link ClassLoader}.
+   */
+  void doResolveClass(Class<?> cl) {
+    resolveClass(cl);
   }
 }

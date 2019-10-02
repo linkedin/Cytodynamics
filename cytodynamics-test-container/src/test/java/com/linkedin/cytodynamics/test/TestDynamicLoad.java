@@ -12,21 +12,28 @@ import com.linkedin.cytodynamics.exception.OriginValidationException;
 import com.linkedin.cytodynamics.nucleus.IsolationLevel;
 import com.linkedin.cytodynamics.nucleus.LoaderBuilder;
 import com.linkedin.cytodynamics.nucleus.OriginRestriction;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.linkedin.cytodynamics.nucleus.DelegateRelationshipBuilder;
 import org.testng.annotations.Test;
 
+import static com.linkedin.cytodynamics.util.JarUtil.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -37,56 +44,7 @@ import static org.testng.Assert.fail;
  * FIXME Document me!
  */
 public class TestDynamicLoad {
-  private static File findBaseDirectory() {
-    File currentDirectory;
-    try {
-      currentDirectory = new File(".").getCanonicalFile();
-    } catch (IOException e) {
-      fail("Failed to find the base directory", e);
-      return null;
-    }
-
-    File testADirectory = new File(currentDirectory, "cytodynamics-test-a");
-    if (testADirectory.exists() && testADirectory.isDirectory()) {
-      return currentDirectory;
-    }
-
-    while (currentDirectory.getParentFile() != null) {
-      currentDirectory = currentDirectory.getParentFile();
-
-      testADirectory = new File(currentDirectory, "cytodynamics-test-a");
-      if (testADirectory.exists() && testADirectory.isDirectory()) {
-        return currentDirectory;
-      }
-    }
-
-    fail("Failed to find the base directory");
-    return null;
-  }
-
-  static URI getTestJarUri(String whichOne) {
-    File targetDir = new File(
-        new File(findBaseDirectory(), "cytodynamics-test-" + whichOne),
-        "target");
-
-    if (!targetDir.exists()) {
-      fail("No target directory exists");
-    }
-
-    //
-    File[] filesInTargetDir = targetDir.listFiles();
-    for (File fileInTargetDir : filesInTargetDir) {
-      if (fileInTargetDir.getName().startsWith("cytodynamics-test") &&
-          fileInTargetDir.getName().endsWith(".jar") &&
-          !fileInTargetDir.getName().contains("sources") &&
-          !fileInTargetDir.getName().contains("javadoc")) {
-        return fileInTargetDir.toURI();
-      }
-    }
-
-    fail("Failed to find the test jar in the target directory");
-    return null;
-  }
+  private static final String DATA_TXT_RESOURCE_NAME = "data.txt";
 
   @Test
   public void testStaticLoad() {
@@ -104,7 +62,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -125,11 +83,66 @@ public class TestDynamicLoad {
   }
 
   @Test
+  public void testLoadResources() throws IOException {
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withIsolationLevel(IsolationLevel.FULL)
+            .build())
+        .build();
+
+    URL dataUrl = loader.getResource(DATA_TXT_RESOURCE_NAME);
+    assertEquals(readLine(dataUrl.openStream()), "A");
+
+    assertEquals(readLine(loader.getResourceAsStream(DATA_TXT_RESOURCE_NAME)), "A");
+
+    Enumeration<URL> dataUrls = loader.getResources(DATA_TXT_RESOURCE_NAME);
+    // should only have a single resource
+    assertEquals(readLine(dataUrls.nextElement().openStream()), "A");
+    assertFalse(dataUrls.hasMoreElements());
+  }
+
+  /**
+   * This tests that resources will only be loaded from the direct classpath and not the parent nor the fallback.
+   */
+  @Test
+  public void testLoadResourcesIsolation() throws IOException {
+    // parent and fallback can have the same classpath, since we are just testing that they aren't used
+    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(parentClassLoaderA)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .addFallbackDelegate(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(fallbackClassLoaderA)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+
+    URL dataUrl = loader.getResource(DATA_TXT_RESOURCE_NAME);
+    assertEquals(readLine(dataUrl.openStream()), "B");
+
+    assertEquals(readLine(loader.getResourceAsStream(DATA_TXT_RESOURCE_NAME)), "B");
+
+    Enumeration<URL> dataUrls = loader.getResources(DATA_TXT_RESOURCE_NAME);
+    // should only have a single resource
+    assertEquals(readLine(dataUrls.nextElement().openStream()), "B");
+    assertFalse(dataUrls.hasMoreElements());
+  }
+
+  @Test
   public void testLoadB() throws Exception {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -141,12 +154,43 @@ public class TestDynamicLoad {
     assertEquals(implementation.getValue(), "B");
   }
 
+  @Test(description = "Given that the loader is a parent of another classloader, then it should still properly do "
+      + "classloading")
+  public void testLoadAsParent() throws Exception {
+    URI apiJarUri = getJarUri("cytodynamics-test-api");
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{apiJarUri.toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Arrays.asList(apiJarUri, getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addDelegatePreferredClassPattern("java.*")
+            // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
+            .addDelegatePreferredClassPattern(TestInterface.class.getName())
+            .build())
+        .build();
+
+    // build a URLClassLoader with no classpath so only the parent would be used
+    ClassLoader mainClassLoader = new URLClassLoader(new URL[]{}, loader);
+    Class<?> testInterfaceClass = mainClassLoader.loadClass(TestInterface.class.getName());
+    assertEquals(testInterfaceClass.getClassLoader(), apiClassLoader,
+        "Should delegate up to the API classloader for the API class");
+    Class<?> nonApiTestInterface = mainClassLoader.loadClass(NonApiTestInterface.class.getName());
+    assertEquals(nonApiTestInterface.getClassLoader(), loader,
+        "If there is a non-API class which is also in API classloader, shouldn't load from API classloader");
+    Class<?> testInterfaceImplClass = mainClassLoader.loadClass(TestInterfaceImpl.class.getName());
+    assertEquals(testInterfaceImplClass.getClassLoader(), loader,
+        "Should delegate up to the isolating loader for the concrete (non-API) class");
+  }
+
   @Test
   public void testIsolation() throws Exception {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -165,7 +209,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.lang.*")
@@ -180,7 +224,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.TRANSITIONAL)
             .build())
@@ -193,7 +237,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.NONE)
             .build())
@@ -209,7 +253,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -225,7 +269,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.TRANSITIONAL)
             .addBlacklistedClassPattern("java.util.*")
@@ -239,7 +283,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.NONE)
             .addBlacklistedClassPattern("java.util.Set")
@@ -256,7 +300,7 @@ public class TestDynamicLoad {
     ClassLoader loaderA = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("a")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -267,7 +311,7 @@ public class TestDynamicLoad {
     ClassLoader loaderB = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -285,9 +329,11 @@ public class TestDynamicLoad {
   @Test(description = "Given that there is a parent and a fallback delegate, and all can load a class, the class "
       + "should be loaded from the parent")
   public void testLoadFromParentNotFallback() throws Exception {
-    URL testApiJarURL = getTestJarUri("api").toURL();
-    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
-    ClassLoader fallbackClassLoaderB = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("b").toURL()}, null);
+    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    ClassLoader parentClassLoaderA =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader fallbackClassLoaderB =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -301,7 +347,7 @@ public class TestDynamicLoad {
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallbackClassLoaderB)
-            // using NONE so that the class could potentially be loaded from here
+            // NONE so that the class could potentially be loaded from here (shouldn't actually be loaded from here)
             .withIsolationLevel(IsolationLevel.NONE)
             .addDelegatePreferredClassPattern("java.*")
             .build())
@@ -313,9 +359,13 @@ public class TestDynamicLoad {
   @Test(description = "Given that there is a parent and a fallback delegate, but only the fallback parent has a "
       + "class, the class should be loaded by the fallback")
   public void testLoadFromFallback() throws Exception {
-    URL testApiJarURL = getTestJarUri("api").toURL();
-    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
-    ClassLoader fallbackClassLoaderB = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("b").toURL()}, null);
+    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    ClassLoader parentClassLoaderA =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader fallbackClassLoaderA =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader fallbackClassLoaderB =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -329,7 +379,13 @@ public class TestDynamicLoad {
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallbackClassLoaderB)
-            // using NONE so that the class could potentially be loaded from here
+            // using NONE so that the class is loaded from here
+            .withIsolationLevel(IsolationLevel.NONE)
+            .addDelegatePreferredClassPattern("java.*")
+            .build())
+        .addFallbackDelegate(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(fallbackClassLoaderA)
+            // NONE so that the class could potentially be loaded from here (shouldn't actually be loaded from here)
             .withIsolationLevel(IsolationLevel.NONE)
             .addDelegatePreferredClassPattern("java.*")
             .build())
@@ -341,10 +397,13 @@ public class TestDynamicLoad {
   @Test(description = "Given that there is a parent and a fallback delegate, but only the final fallback has a class, "
       + "the class should be loaded by that final fallback")
   public void testLoadFromFinalFallback() throws Exception {
-    URL testApiJarURL = getTestJarUri("api").toURL();
-    ClassLoader parentClassLoaderB = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("b").toURL()}, null);
-    ClassLoader fallbackClassLoaderB = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("b").toURL()}, null);
-    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
+    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    ClassLoader parentClassLoaderB =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
+    ClassLoader fallbackClassLoaderB =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
+    ClassLoader fallbackClassLoaderA =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -358,13 +417,12 @@ public class TestDynamicLoad {
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallbackClassLoaderB)
-            // using NONE so that the class could potentially be loaded from here
             .withIsolationLevel(IsolationLevel.NONE)
             .addDelegatePreferredClassPattern("java.*")
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallbackClassLoaderA)
-            // using NONE so that the class could potentially be loaded from here
+            // NONE so class can be loaded form here
             .withIsolationLevel(IsolationLevel.NONE)
             .addDelegatePreferredClassPattern("java.*")
             .build())
@@ -379,9 +437,11 @@ public class TestDynamicLoad {
   @Test(description = "Given FULL isolation level set for the parent and fallback, and a class is not an API, an "
       + "exception should be thrown", expectedExceptions = CytodynamicsClassNotFoundException.class)
   public void testIsolationForFallback() throws Exception {
-    URL testApiJarURL = getTestJarUri("api").toURL();
-    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
-    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("a").toURL()}, null);
+    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    ClassLoader parentClassLoaderA =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader fallbackClassLoaderA =
+        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -428,25 +488,28 @@ public class TestDynamicLoad {
   @Test(description = "Given a structure in which the classloader relationships form a graph, and two of the loaders "
       + "have a common parent, then delegation should properly load from the correct loaders")
   public void testGraphRelationshipWithCommonParent() throws Exception {
-    URL commonParentJarUrl = getTestJarUri("api").toURL();
+    URL commonParentJarUrl = getJarUri("cytodynamics-test-api").toURL();
     ClassLoader commonParent = new URLClassLoader(new URL[]{commonParentJarUrl}, null);
-    ClassLoader partialDelegation = new URLClassLoader(new URL[]{getTestJarUri("a").toURL()}, commonParent);
+    ClassLoader partialDelegation =
+        new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, commonParent);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri("b")))
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(commonParent)
             .withIsolationLevel(IsolationLevel.FULL)
             .addDelegatePreferredClassPattern("java.*")
-            // TODO fix: when loader's classloader doesn't match the parent classloader, Api annotation doesn't apply
+            // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
             .addDelegatePreferredClassPattern(TestInterface.class.getName())
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(partialDelegation)
-            // using NONE so that the class could potentially be loaded from here
-            .withIsolationLevel(IsolationLevel.NONE)
+            .withIsolationLevel(IsolationLevel.FULL)
             .addDelegatePreferredClassPattern("java.*")
+            // only load concrete classes from fallback; don't load API classes from fallback
+            .addDelegatePreferredClassPattern(TestInterfaceImpl.class.getName())
+            .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
             .build())
         .build();
 
@@ -480,15 +543,15 @@ public class TestDynamicLoad {
 
     String jarToUse;
     if (parentValue.equals("A")) {
-      jarToUse = "b";
+      jarToUse = "cytodynamics-test-b";
     } else {
-      jarToUse = "a";
+      jarToUse = "cytodynamics-test-a";
     }
 
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getTestJarUri(jarToUse)))
+        .withClasspath(Collections.singletonList(getJarUri(jarToUse)))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPattern("java.*")
@@ -512,7 +575,7 @@ public class TestDynamicLoad {
       ClassLoader loader = LoaderBuilder
           .anIsolatingLoader()
           .withOriginRestriction(OriginRestriction.allowByDefault())
-          .withClasspath(Collections.singletonList(getTestJarUri("a")))
+          .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
           .withParentRelationship(DelegateRelationshipBuilder.builder()
               .withIsolationLevel(IsolationLevel.FULL)
               .addWhitelistedClassPattern("java.*")
@@ -533,7 +596,7 @@ public class TestDynamicLoad {
   @Test
   public void testSecurity() throws Exception {
     File tempDir = new File(System.getProperty("java.io.tmpdir"));
-    Path sourcePath = new File(getTestJarUri("a")).toPath();
+    Path sourcePath = new File(getJarUri("cytodynamics-test-a")).toPath();
     File destinationFile = new File(tempDir, "a.jar");
 
     if (destinationFile.exists()) {
@@ -549,7 +612,7 @@ public class TestDynamicLoad {
       LoaderBuilder
           .anIsolatingLoader()
           .withOriginRestriction(onlyTmpOriginRestriction)
-          .withClasspath(Collections.singletonList(getTestJarUri("a")))
+          .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
           .withParentRelationship(DelegateRelationshipBuilder.builder()
               .withIsolationLevel(IsolationLevel.FULL)
               .addWhitelistedClassPattern("java.*")
@@ -582,5 +645,12 @@ public class TestDynamicLoad {
         .collect(Collectors.toList());
     assertEquals(foundInterfaces.size(), 1);
     return foundInterfaces.iterator().next();
+  }
+
+  private static String readLine(InputStream inputStream) throws IOException {
+    try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.defaultCharset());
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+      return bufferedReader.readLine();
+    }
   }
 }
