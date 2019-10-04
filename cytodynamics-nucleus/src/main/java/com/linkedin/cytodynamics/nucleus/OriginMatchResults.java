@@ -7,6 +7,9 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.exception.OriginValidationException;
+
+
 /**
  * Origin matching results.
  */
@@ -29,7 +32,7 @@ enum OriginMatchResults {
 
   public boolean isAllowed() {
     if (!matches) {
-      throw new RuntimeException("Calling isAllowed() on a non-match");
+      throw new OriginValidationException("Calling isAllowed() on a non-match");
     }
 
     return allowed;
