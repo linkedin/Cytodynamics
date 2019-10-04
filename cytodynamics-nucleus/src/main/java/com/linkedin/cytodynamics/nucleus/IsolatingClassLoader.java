@@ -7,6 +7,7 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.exception.CytodynamicsClassNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -114,7 +115,9 @@ class IsolatingClassLoader extends URLClassLoader {
         return cl;
       } else {
         // got through parent and fallback delegates but could not find the class
-        throw new ClassNotFoundException("Could not load class for name " + name);
+        throw new CytodynamicsClassNotFoundException(String.format(
+            "Could not fully load class for name %s. It is possible that the immediate class is found, but a class that "
+                + "it depends on cannot be found", name));
       }
     }
   }

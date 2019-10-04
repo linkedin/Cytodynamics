@@ -7,6 +7,8 @@
  */
 package com.linkedin.cytodynamics.test;
 
+import com.linkedin.cytodynamics.exception.CytodynamicsClassNotFoundException;
+import com.linkedin.cytodynamics.exception.OriginValidationException;
 import com.linkedin.cytodynamics.matcher.BootstrapClassPredicate;
 import com.linkedin.cytodynamics.matcher.GlobMatcher;
 import com.linkedin.cytodynamics.nucleus.IsolationLevel;
@@ -432,11 +434,10 @@ public class TestDynamicLoad {
   }
 
   /**
-   * This also tests that a {@link ClassNotFoundException} is thrown when a class can't be found.
+   * This also tests that a {@link CytodynamicsClassNotFoundException} is thrown when a class can't be found.
    */
   @Test(description = "Given FULL isolation level set for the parent and fallback, and a class is not an API, an "
-      + "exception should be thrown",
-      expectedExceptions = ClassNotFoundException.class)
+      + "exception should be thrown", expectedExceptions = CytodynamicsClassNotFoundException.class)
   public void testIsolationForFallback() throws Exception {
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
@@ -635,8 +636,8 @@ public class TestDynamicLoad {
               .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
               .build())
           .build();
-      fail("Should have thrown a security exception");
-    } catch (SecurityException e) {
+      fail("Should have thrown an exception due to the origin restriction");
+    } catch (OriginValidationException e) {
       // Expected
     }
 
