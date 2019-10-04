@@ -22,7 +22,11 @@ public class BootstrapClassPredicate implements Predicate<String> {
   private final ClassLoader classLoaderForBootstrapClasses;
 
   public BootstrapClassPredicate() {
-    this.classLoaderForBootstrapClasses = buildClassLoaderForBootstrapClasses();
+    /*
+     * Null parent means to use the bootstrap classloader as the parent. Pass empty urls so that the only classes that
+     * can be loaded are from the parent (i.e. bootstrap classloader).
+     */
+    this.classLoaderForBootstrapClasses = new URLClassLoader(new URL[]{}, null);
   }
 
   @Override
@@ -34,13 +38,5 @@ public class BootstrapClassPredicate implements Predicate<String> {
     } catch (ClassNotFoundException | NoClassDefFoundError e) {
       return false;
     }
-  }
-
-  private static ClassLoader buildClassLoaderForBootstrapClasses() {
-    /*
-     * Null parent means to use the bootstrap classloader as the parent. Pass empty urls so that the only classes that
-     * can be loaded are from the parent (i.e. bootstrap classloader).
-     */
-    return new URLClassLoader(new URL[]{}, null);
   }
 }
