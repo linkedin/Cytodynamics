@@ -7,6 +7,7 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.matcher.GlobMatcher;
 import java.net.URL;
 
 
@@ -23,6 +24,6 @@ class GlobPatternRestrictionFilter extends BaseOriginRestrictionFilter {
 
   @Override
   public boolean matches(URL url) {
-    return globMatcher.matches(url.toExternalForm());
+    return globMatcher.test(url.toExternalForm());
   }
 }

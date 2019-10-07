@@ -7,6 +7,7 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.matcher.GlobMatcher;
 import com.linkedin.cytodynamics.test.TestInterface;
 import com.linkedin.cytodynamics.test.TestInterfaceAOnlyImpl;
 import com.linkedin.cytodynamics.test.TestInterfaceImpl;
@@ -43,14 +44,14 @@ public class TestLoadClassResolve {
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(parent)
             .withIsolationLevel(IsolationLevel.FULL)
-            .addDelegatePreferredClassPattern("java.*")
+            .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(fallback)
             .withIsolationLevel(IsolationLevel.FULL)
             // only load concrete classes from fallback; don't load API classes from fallback
-            .addDelegatePreferredClassPattern(TestInterfaceAOnlyImpl.class.getName())
-            .addBlacklistedClassPattern(TestInterface.class.getName())
+            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterfaceAOnlyImpl.class.getName()))
+            .addBlacklistedClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .build();
     /*

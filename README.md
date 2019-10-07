@@ -71,7 +71,7 @@ ClassLoader loader = LoaderBuilder
     .withClasspath(new File("myjar.jar").getUri())
     .withParentRelationship(DelegateRelationshipBuilder.builder()
         .withIsolationLevel(IsolationLevel.FULL)
-        .addWhitelistedClassPattern("com.example.*")
+        .addWhitelistedClassPredicate(new GlobMatcher("com.example.*"))
         .build())
     .build();
 ```
