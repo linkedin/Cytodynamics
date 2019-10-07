@@ -7,8 +7,10 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
+import com.linkedin.cytodynamics.matcher.GlobMatcher;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 
 /**
@@ -18,9 +20,9 @@ import java.util.Set;
 public final class DelegateRelationshipBuilder {
   private ClassLoader delegateClassLoader = getClass().getClassLoader();
   private IsolationLevel isolationLevel = IsolationLevel.NONE;
-  private Set<GlobMatcher> delegatePreferredClassPatterns = new HashSet<>();
-  private Set<GlobMatcher> blacklistedClassPatterns = new HashSet<>();
-  private Set<GlobMatcher> whitelistedClassPatterns = new HashSet<>();
+  private Set<Predicate<String>> delegatePreferredClassPredicates = new HashSet<>();
+  private Set<Predicate<String>> blacklistedClassPredicates = new HashSet<>();
+  private Set<Predicate<String>> whitelistedClassPredicates = new HashSet<>();
 
   private DelegateRelationshipBuilder() {
   }
@@ -57,36 +59,38 @@ public final class DelegateRelationshipBuilder {
   }
 
   /**
-   * Adds a glob pattern for classes to be loaded from the delegate classloader as opposed to the child classloader.
+   * Adds a {@link Predicate} for class names to be loaded from the delegate classloader as opposed to the child
+   * classloader.
    * This can be used to force the child to use certain classes which must have a common implementation, such as logging
-   * libraries.
+   * libraries or bootstrap classes.
    *
-   * @param pattern A glob pattern for classes to load from the delegate classloader, such as "org.apache.log4j.*"
+   * @param predicate A {@link Predicate} for a class name to load from the delegate classloader, such as
+   *                  "org.apache.log4j.*"
    */
-  public DelegateRelationshipBuilder addDelegatePreferredClassPattern(String pattern) {
-    this.delegatePreferredClassPatterns.add(new GlobMatcher(pattern));
+  public DelegateRelationshipBuilder addDelegatePreferredClassPredicate(Predicate<String> predicate) {
+    this.delegatePreferredClassPredicates.add(predicate);
     return this;
   }
 
   /**
-   * Adds a glob pattern for classes never to be loaded from the delegate classloader, even if they have an
+   * Adds a {@link Predicate} for class names never to be loaded from the delegate classloader, even if they have an
    * <code>@Api</code> annotation.
    *
-   * @param pattern A glob pattern for classes to be avoided from the delegate classloader
+   * @param predicate A {@link Predicate} for a class name to be avoided from the delegate classloader
    */
-  public DelegateRelationshipBuilder addBlacklistedClassPattern(String pattern) {
-    this.blacklistedClassPatterns.add(new GlobMatcher(pattern));
+  public DelegateRelationshipBuilder addBlacklistedClassPredicate(Predicate<String> predicate) {
+    this.blacklistedClassPredicates.add(predicate);
     return this;
   }
 
   /**
-   * Adds a glob pattern for classes to be allowed to be loaded from the delegate classloader, if they don't exist in
-   * the child classloader.
+   * Adds a {@link Predicate} for class names to be allowed to be loaded from the delegate classloader, if they don't
+   * exist in the child classloader.
    *
-   * @param pattern A glob pattern for classes to be allowed to be loaded from the delegate classloader
+   * @param predicate A {@link Predicate} for a class name to be allowed to be loaded from the delegate classloader
    */
-  public DelegateRelationshipBuilder addWhitelistedClassPattern(String pattern) {
-    this.whitelistedClassPatterns.add(new GlobMatcher(pattern));
+  public DelegateRelationshipBuilder addWhitelistedClassPredicate(Predicate<String> predicate) {
+    this.whitelistedClassPredicates.add(predicate);
     return this;
   }
 
@@ -96,7 +100,7 @@ public final class DelegateRelationshipBuilder {
    * @return A {@link DelegateRelationship} with the given parameters.
    */
   public DelegateRelationship build() {
-    return new DelegateRelationship(this.delegateClassLoader, this.isolationLevel, this.delegatePreferredClassPatterns,
-        this.blacklistedClassPatterns, this.whitelistedClassPatterns);
+    return new DelegateRelationship(this.delegateClassLoader, this.isolationLevel, this.delegatePreferredClassPredicates,
+        this.blacklistedClassPredicates, this.whitelistedClassPredicates);
   }
 }
