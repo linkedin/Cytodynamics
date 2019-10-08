@@ -7,7 +7,6 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
-import com.linkedin.cytodynamics.matcher.GlobMatcher;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -23,6 +22,9 @@ public final class DelegateRelationshipBuilder {
   private Set<Predicate<String>> delegatePreferredClassPredicates = new HashSet<>();
   private Set<Predicate<String>> blacklistedClassPredicates = new HashSet<>();
   private Set<Predicate<String>> whitelistedClassPredicates = new HashSet<>();
+  private Set<Predicate<String>> delegatePreferredResourcePredicates = new HashSet<>();
+  private Set<Predicate<String>> blacklistedResourcePredicates = new HashSet<>();
+  private Set<Predicate<String>> whitelistedResourcePredicates = new HashSet<>();
 
   private DelegateRelationshipBuilder() {
   }
@@ -95,12 +97,54 @@ public final class DelegateRelationshipBuilder {
   }
 
   /**
+   * Adds a {@link Predicate} for resource names to be loaded from the delegate classloader as opposed to the child
+   * classloader.
+   * The predicate will be used to check against the name used to get the resource in a
+   * {@link ClassLoader#getResource(String)} or {@link ClassLoader#getResources(String)} call. If the resource name
+   * matches a predicate, then any resource URLs from the delegate classloader would be allowed.
+   *
+   * @param predicate A {@link Predicate} for a resource name to load from the delegate classloader
+   */
+  public DelegateRelationshipBuilder addDelegatePreferredResourcePredicate(Predicate<String> predicate) {
+    this.delegatePreferredResourcePredicates.add(predicate);
+    return this;
+  }
+
+  /**
+   * Adds a {@link Predicate} for resource names to never be loaded from the delegate classloader.
+   * The predicate will be used to check against the name used to get the resource in a
+   * {@link ClassLoader#getResource(String)} or {@link ClassLoader#getResources(String)} call. If the resource name
+   * matches a predicate, then the delegate will not be searched for resources for that name.
+   *
+   * @param predicate A {@link Predicate} for a resource name to be avoided from the delegate classloader
+   */
+  public DelegateRelationshipBuilder addBlacklistedResourcePredicate(Predicate<String> predicate) {
+    this.blacklistedResourcePredicates.add(predicate);
+    return this;
+  }
+
+  /**
+   * Adds a {@link Predicate} for resource names to be allowed to be loaded from the delegate classloader, if they don't
+   * exist in the child classloader.
+   * The predicate will be used to check against the name used to get the resource in a
+   * {@link ClassLoader#getResource(String)} or {@link ClassLoader#getResources(String)} call. If the resource name
+   * matches a predicate, then any resource URLs from the delegate classloader would be allowed.
+   *
+   * @param predicate A {@link Predicate} for a resource name to be allowed to be loaded from the delegate classloader
+   */
+  public DelegateRelationshipBuilder addWhitelistedResourcePredicate(Predicate<String> predicate) {
+    this.whitelistedResourcePredicates.add(predicate);
+    return this;
+  }
+
+  /**
    * Builds an instance of a {@link DelegateRelationship} with the given parameters.
    *
    * @return A {@link DelegateRelationship} with the given parameters.
    */
   public DelegateRelationship build() {
     return new DelegateRelationship(this.delegateClassLoader, this.isolationLevel, this.delegatePreferredClassPredicates,
-        this.blacklistedClassPredicates, this.whitelistedClassPredicates);
+        this.blacklistedClassPredicates, this.whitelistedClassPredicates, this.delegatePreferredResourcePredicates,
+        this.blacklistedResourcePredicates, this.whitelistedResourcePredicates);
   }
 }

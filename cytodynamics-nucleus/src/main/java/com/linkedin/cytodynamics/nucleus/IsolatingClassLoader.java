@@ -7,14 +7,21 @@
  */
 package com.linkedin.cytodynamics.nucleus;
 
-import com.linkedin.cytodynamics.exception.CytodynamicsClassNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import com.linkedin.cytodynamics.exception.CytodynamicsClassNotFoundException;
+import com.linkedin.cytodynamics.isolation.Chooser;
+import com.linkedin.cytodynamics.isolation.ChooserMappingFactory;
 
 
 /**
@@ -22,6 +29,21 @@ import java.util.function.Predicate;
  */
 class IsolatingClassLoader extends URLClassLoader {
   private static final Logger LOGGER = LogApiAdapter.getLogger(IsolatingClassLoader.class);
+  private static final Map<IsolationLevel, Chooser<Class<?>>> CLASS_CHOOSER_MAPPING =
+      ChooserMappingFactory.buildChooserMapping(delegate -> LOGGER.warn(String.format(
+          "Class %s used from the delegate classloader would not be visible if running under FULL isolation, unless "
+              + "whitelisting is used.",
+          delegate.getName())));
+  private static final Map<IsolationLevel, Chooser<URL>> RESOURCE_CHOOSER_MAPPING =
+      ChooserMappingFactory.buildChooserMapping(delegate -> LOGGER.warn(String.format(
+          "Resource %s used from the delegate classloader would not be visible if running under FULL isolation, unless "
+              + "whitelisting is used.",
+          delegate.toString())));
+  private static final Map<IsolationLevel, Chooser<List<URL>>> RESOURCES_CHOOSER_MAPPING =
+      ChooserMappingFactory.buildChooserMappingForList(delegate -> LOGGER.warn(String.format(
+          "Resources [%s] used from the delegate classloader would not be visible if running under FULL isolation, "
+              + "unless whitelisting is used.",
+          delegate.stream().map(URL::toString).collect(Collectors.joining(",")))));
 
   private final DelegateRelationship parentRelationship;
   private final List<DelegateRelationship> fallbackDelegates;
@@ -41,51 +63,6 @@ class IsolatingClassLoader extends URLClassLoader {
     this.parentRelationship = parentRelationship;
     this.fallbackDelegates = fallbackDelegates;
   }
-
-  enum IsolationBehaviors {
-    USE_CHILD_CLASS((delegate, child) -> child),
-    USE_DELEGATE_CLASS((delegate, child) -> delegate),
-    USE_DELEGATE_AND_LOG((delegate, child) -> {
-      LOGGER.warn("Class " + delegate.getName()
-          + " used from the delegate classloader would not be visible when running under full isolation.");
-      return delegate;
-    }),
-    CLASS_NOT_FOUND((delegate, child) -> null);
-
-    IsolationBehaviors(BiFunction<Class<?>, Class<?>, Class<?>> function) {
-      _function = function;
-    }
-
-    private final BiFunction<Class<?>, Class<?>, Class<?>> _function;
-
-    public Class<?> getEffectiveClass(Class<?> delegate, Class<?> child) {
-      return _function.apply(delegate, child);
-    }
-  }
-
-  private static final IsolationBehaviors[][] ISOLATION_BEHAVIORS = new IsolationBehaviors[][]{
-      // NONE
-      {
-          IsolationBehaviors.CLASS_NOT_FOUND,       // Not in delegate or child
-          IsolationBehaviors.USE_CHILD_CLASS,       // Only in child
-          IsolationBehaviors.USE_DELEGATE_CLASS,    // Only in delegate
-          IsolationBehaviors.USE_CHILD_CLASS        // In delegate and child
-      },
-      // TRANSITIONAL
-      {
-          IsolationBehaviors.CLASS_NOT_FOUND,       // Not in delegate or child
-          IsolationBehaviors.USE_CHILD_CLASS,       // Only in child
-          IsolationBehaviors.USE_DELEGATE_AND_LOG,  // Only in delegate
-          IsolationBehaviors.USE_CHILD_CLASS        // In delegate and child
-      },
-      // FULL
-      {
-          IsolationBehaviors.CLASS_NOT_FOUND,       // Not in delegate or child
-          IsolationBehaviors.USE_CHILD_CLASS,       // Only in child
-          IsolationBehaviors.CLASS_NOT_FOUND,       // Only in delegate
-          IsolationBehaviors.USE_CHILD_CLASS        // In delegate and child
-      }
-  };
 
   @Override
   protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
@@ -122,26 +99,34 @@ class IsolatingClassLoader extends URLClassLoader {
     }
   }
 
-  /**
-   * This only loads resources from the classpath associated with this classloader. It does not load resources from
-   * any parent classloaders.
-   *
-   * TODO: Is it useful to be able to whitelist certain resources to be loaded from a parent?
-   */
   @Override
   public URL getResource(String name) {
-    return findResource(name);
+    URL resource = tryLoadResourceWithDelegate(name, this.parentRelationship);
+    if (resource != null) {
+      return resource;
+    }
+    for (DelegateRelationship fallbackDelegate : this.fallbackDelegates) {
+      resource = tryLoadResourceWithDelegate(name, fallbackDelegate);
+      if (resource != null) {
+        return resource;
+      }
+    }
+    // could not find resource anywhere
+    return null;
   }
 
-  /**
-   * This only loads resources from the classpath associated with this classloader. It does not load resources from
-   * any parent classloaders.
-   *
-   * TODO: Is it useful to be able to whitelist certain resources to be loaded from a parent?
-   */
   @Override
   public Enumeration<URL> getResources(String name) throws IOException {
-    return findResources(name);
+    /*
+     * Using a LinkedHashSet for ordering (search for resources in a certain order) and uniqueness (might return
+     * same resource from multiple search paths).
+     * Search through both the parent and the fallbacks for resources.
+     */
+    LinkedHashSet<URL> resources = new LinkedHashSet<>(loadResourcesWithDelegate(name, this.parentRelationship));
+    for (DelegateRelationship fallbackDelegate : this.fallbackDelegates) {
+      resources.addAll(loadResourcesWithDelegate(name, fallbackDelegate));
+    }
+    return Collections.enumeration(resources);
   }
 
   /*
@@ -155,72 +140,139 @@ class IsolatingClassLoader extends URLClassLoader {
    * @param name name of the class to load
    * @param delegateRelationship {@link DelegateRelationship} to use for loading
    * @return {@link Class} corresponding to {@code name} if a class could be resolved corresponding to the
-   * {@code parentRelationship}; null otherwise
+   * {@code delegateRelationship}; null otherwise
    */
   private Class<?> tryLoadClassWithDelegate(String name, DelegateRelationship delegateRelationship) {
     Class<?> delegateClass = null;
-    Class<?> childClass = null;
-
-    // Is the class blacklisted from being loaded from the delegate?
-    boolean isBlacklisted = false;
-    for (Predicate<String> blacklistedClassPredicate : delegateRelationship.getBlacklistedClassPredicates()) {
-      if (blacklistedClassPredicate.test(name)) {
-        isBlacklisted = true;
-        break;
-      }
-    }
-
-    // Is it already loaded in the delegate class loader?
-    try {
-      if (!isBlacklisted) {
-        delegateClass = delegateRelationship.getDelegateClassLoader().loadClass(name);
-
-        // Is it part of the exported API or part of core Java?
+    // class might be blacklisted from being loaded from the delegate
+    boolean isBlacklisted = matchesPredicate(delegateRelationship.getBlacklistedClassPredicates(), name);
+    if (!isBlacklisted) {
+      delegateClass = tryLoadClass(delegateRelationship.getDelegateClassLoader(), name);
+      // delegateClass might still be null; just move to next section if it is still null
+      if (delegateClass != null) {
         if (delegateClass.isAnnotationPresent(Api.class)) {
+          // class is part of exported API
           return delegateClass;
-        } else {
-          // Is it delegate preferred?
-          for (Predicate<String> delegatePreferredClassPredicate :
-              delegateRelationship.getDelegatePreferredClassPredicates()) {
-            if (delegatePreferredClassPredicate.test(name)) {
-              return delegateClass;
-            }
-          }
+        } else if (matchesPredicate(delegateRelationship.getDelegatePreferredClassPredicates(), name)) {
+          // class is delegate-preferred
+          return delegateClass;
         }
       }
-    } catch (ClassNotFoundException | NoClassDefFoundError e) {
-      // It doesn't exist in the delegate class loader, try to load it.
     }
 
+    Class<?> childClass = null;
     try {
       childClass = findClass(name);
     } catch (ClassNotFoundException | NoClassDefFoundError e) {
-      // Ignored
+      // still ok so far; still might be able to use the class from delegate
     }
 
     Class<?> returnValue =
-        getIsolationBehavior(delegateRelationship.getIsolationLevel(), delegateClass, childClass).getEffectiveClass(
-            delegateClass, childClass);
+        CLASS_CHOOSER_MAPPING.get(delegateRelationship.getIsolationLevel()).choose(delegateClass, childClass);
 
     // Is it whitelisted and present in the delegate class loader but hidden due to the isolation behavior?
     if (returnValue == null && delegateClass != null) {
-      for (Predicate<String> whitelistedClassPredicate : delegateRelationship.getWhitelistedClassPredicates()) {
-        if (whitelistedClassPredicate.test(name)) {
-          return delegateClass;
-        }
+      if (matchesPredicate(delegateRelationship.getWhitelistedClassPredicates(), name)) {
+        return delegateClass;
       }
     }
 
     return returnValue;
   }
 
-  private static IsolationBehaviors getIsolationBehavior(IsolationLevel isolationLevel, Class<?> delegateClass,
-      Class<?> childClass) {
-    boolean hasDelegateClass = delegateClass != null;
-    boolean hasChildClass = childClass != null;
-    int behaviorIndex = (hasDelegateClass ? 0b10 : 0b00) | (hasChildClass ? 0b01 : 0b00);
+  /**
+   * Try to load a resource corresponding to an individual {@link DelegateRelationship}.
+   *
+   * @param name name of the resource to load
+   * @param delegateRelationship {@link DelegateRelationship} to use for loading
+   * @return {@link URL} for resource corresponding to {@code name} if a resource could be resolved corresponding to the
+   * {@code delegateRelationship}; null otherwise
+   */
+  private URL tryLoadResourceWithDelegate(String name, DelegateRelationship delegateRelationship) {
+    URL delegateResource = null;
+    // resource might be blacklisted from being loaded from the delegate
+    boolean isBlacklisted = matchesPredicate(delegateRelationship.getBlacklistedResourcePredicates(), name);
+    if (!isBlacklisted) {
+      delegateResource = delegateRelationship.getDelegateClassLoader().getResource(name);
+      // delegateResource might still be null; just move to next section if it is still null
+      if (delegateResource != null) {
+        if (matchesPredicate(delegateRelationship.getDelegatePreferredResourcePredicates(), name)) {
+          // resource is delegate-preferred
+          return delegateResource;
+        }
+      }
+    }
 
-    return ISOLATION_BEHAVIORS[isolationLevel.ordinal()][behaviorIndex];
+    URL childResource = findResource(name);
+
+    URL returnValue =
+        RESOURCE_CHOOSER_MAPPING.get(delegateRelationship.getIsolationLevel()).choose(delegateResource, childResource);
+
+    // Is it whitelisted and present in the delegate class loader but hidden due to the isolation behavior?
+    if (returnValue == null && delegateResource != null) {
+      if (matchesPredicate(delegateRelationship.getWhitelistedResourcePredicates(), name)) {
+        return delegateResource;
+      }
+    }
+
+    return returnValue;
+  }
+
+  /**
+   * Load resources using a certain {@code delegateRelationship}. This will merge resources from the delegate and/or
+   * child based on isolation level and whitelists.
+   */
+  private List<URL> loadResourcesWithDelegate(String name, DelegateRelationship delegateRelationship)
+      throws IOException {
+    /*
+     * Using a LinkedHashSet for ordering (search for resources in a certain order) and uniqueness (might return
+     * same resource from multiple search paths).
+     */
+    LinkedHashSet<URL> resources = new LinkedHashSet<>();
+    List<URL> delegateResources = Collections.emptyList();
+    // resource might be blacklisted from being loaded from the delegate
+    boolean isBlacklisted = matchesPredicate(delegateRelationship.getBlacklistedResourcePredicates(), name);
+    if (!isBlacklisted) {
+      delegateResources = Collections.list(delegateRelationship.getDelegateClassLoader().getResources(name));
+      if (matchesPredicate(delegateRelationship.getDelegatePreferredResourcePredicates(), name)) {
+        // resources are delegate-preferred, so add delegate resources first
+        resources.addAll(delegateResources);
+      }
+    }
+
+    List<URL> childResources = Collections.list(findResources(name));
+    List<URL> chosenResources = chooseResources(delegateRelationship, delegateResources, childResources);
+    resources.addAll(chosenResources);
+    if (matchesPredicate(delegateRelationship.getWhitelistedResourcePredicates(), name)) {
+      resources.addAll(delegateResources);
+    }
+
+    return new ArrayList<>(resources);
+  }
+
+  /**
+   * Calls the isolation chooser to choose resources. Assumes delegateResources and childResources are non-null.
+   */
+  private static List<URL> chooseResources(DelegateRelationship delegateRelationship, List<URL> delegateResources,
+      List<URL> childResources) {
+    // an empty list means no resources are found, and need to use null for chooser to denote "not found"
+    List<URL> delegateResourcesOrNull = delegateResources.isEmpty() ? null : delegateResources;
+    List<URL> childResourcesOrNull = childResources.isEmpty() ? null : childResources;
+    List<URL> chosenResourcesOrNull = RESOURCES_CHOOSER_MAPPING.get(delegateRelationship.getIsolationLevel())
+        .choose(delegateResourcesOrNull, childResourcesOrNull);
+    return chosenResourcesOrNull == null ? Collections.emptyList() : chosenResourcesOrNull;
+  }
+
+  private static boolean matchesPredicate(Set<Predicate<String>> predicates, String value) {
+    return predicates.stream().anyMatch(predicate -> predicate.test(value));
+  }
+
+  private static Class<?> tryLoadClass(ClassLoader classLoader, String name) {
+    try {
+      return classLoader.loadClass(name);
+    } catch (ClassNotFoundException | NoClassDefFoundError e) {
+      return null;
+    }
   }
 
   /**
