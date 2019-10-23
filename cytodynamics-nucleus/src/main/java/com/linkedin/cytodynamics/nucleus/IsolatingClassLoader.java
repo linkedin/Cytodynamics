@@ -8,6 +8,7 @@
 package com.linkedin.cytodynamics.nucleus;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -150,7 +151,20 @@ class IsolatingClassLoader extends URLClassLoader {
       delegateClass = tryLoadClass(delegateRelationship.getDelegateClassLoader(), name);
       // delegateClass might still be null; just move to next section if it is still null
       if (delegateClass != null) {
-        if (delegateClass.isAnnotationPresent(Api.class)) {
+        /*
+         * Is the class part of the exported API?
+         *
+         * Note: We need to load the Api class from the same classloader which loaded the delegateClass. If we just used
+         * Api.class directly, then that would come from the classloader which loaded this IsolatingClassLoader. That
+         * classloader might be different than the delegate classloader, so they would each load a different instance of
+         * the Api class, and they would not be considered the same class for the purposes of the isAnnotationPresent
+         * method.
+         */
+        // noinspection unchecked: safe to cast since Api is an annotation class
+        Class<? extends Annotation> apiAnnotationClass =
+            (Class<? extends Annotation>) tryLoadClass(delegateRelationship.getDelegateClassLoader(),
+                Api.class.getName());
+        if (apiAnnotationClass != null && delegateClass.isAnnotationPresent(apiAnnotationClass)) {
           // class is part of exported API
           return delegateClass;
         } else if (matchesPredicate(delegateRelationship.getDelegatePreferredClassPredicates(), name)) {
