@@ -156,7 +156,7 @@ class IsolatingClassLoader extends URLClassLoader {
    * @param name name of the class to load
    * @param delegateRelationship {@link DelegateRelationship} to use for loading
    * @return {@link Class} corresponding to {@code name} if a class could be resolved corresponding to the
-   * {@code parentRelationship}; null otherwise
+   * {@code delegateRelationship}; null otherwise
    */
   private Class<?> tryLoadClassWithDelegate(String name, DelegateRelationship delegateRelationship) {
     Class<?> delegateClass = null;
@@ -179,7 +179,7 @@ class IsolatingClassLoader extends URLClassLoader {
         /*
          * Is the class part of the exported API?
          *
-         * Note: We need to load the Api class from the same classloader which loaded the parentClass. If we just used
+         * Note: We need to load the Api class from the same classloader which loaded the delegateClass. If we just used
          * Api.class directly, then that would come from the classloader which loaded this IsolatingClassLoader. That
          * classloader might be different than the delegate classloader, so they would each load a different instance of
          * the Api class, and they would not be considered the same class for the purposes of the isAnnotationPresent
