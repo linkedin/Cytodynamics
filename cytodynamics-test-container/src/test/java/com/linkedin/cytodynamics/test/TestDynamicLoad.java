@@ -160,7 +160,9 @@ public class TestDynamicLoad {
       + "classloading")
   public void testLoadAsParent() throws Exception {
     URI apiJarUri = getJarUri("cytodynamics-test-api");
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{apiJarUri.toURL()}, null);
+    // need cytodynamics-nucleus for Api annotation in parent
+    URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{cytodynamics, apiJarUri.toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -169,8 +171,6 @@ public class TestDynamicLoad {
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
             .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
-            // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
-            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .build();
 
@@ -490,8 +490,10 @@ public class TestDynamicLoad {
   @Test(description = "Given a structure in which the classloader relationships form a graph, and two of the loaders "
       + "have a common parent, then delegation should properly load from the correct loaders")
   public void testGraphRelationshipWithCommonParent() throws Exception {
-    URL commonParentJarUrl = getJarUri("cytodynamics-test-api").toURL();
-    ClassLoader commonParent = new URLClassLoader(new URL[]{commonParentJarUrl}, null);
+    URL apiJarUrl = getJarUri("cytodynamics-test-api").toURL();
+    // need cytodynamics-nucleus for Api annotation in parent
+    URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
+    ClassLoader commonParent = new URLClassLoader(new URL[]{cytodynamics, apiJarUrl}, null);
     ClassLoader partialDelegation =
         new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, commonParent);
     ClassLoader loader = LoaderBuilder
@@ -502,8 +504,6 @@ public class TestDynamicLoad {
             .withDelegateClassLoader(commonParent)
             .withIsolationLevel(IsolationLevel.FULL)
             .addDelegatePreferredClassPredicate(new GlobMatcher("java.*"))
-            // TODO fix: when loader's classloader doesn't match parent classloader, Api annotation doesn't apply
-            .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(partialDelegation)
@@ -512,18 +512,13 @@ public class TestDynamicLoad {
             // only load concrete classes from fallback; don't load API classes from fallback
             .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterfaceImpl.class.getName()))
             .addDelegatePreferredClassPredicate(new GlobMatcher(TestInterfaceAOnlyImpl.class.getName()))
+            .addBlacklistedClassPredicate(new GlobMatcher(TestInterface.class.getName()))
             .build())
         .build();
 
-    /*
-     * If we tried to assign to a TestInterface variable directly, it would not work, because the TestInterface for the
-     * actual objects are loaded from the commonParent and not the classloader which is associated with the execution of
-     * this test.
-     * This means we need to use reflection to call methods on the objects.
-     */
     Object testInterfaceImpl = loader.loadClass(TestInterfaceImpl.class.getName()).newInstance();
-    assertEquals(testInterfaceImpl.getClass().getMethod("getValue").invoke(testInterfaceImpl), "B",
-        "TestInterfaceImpl needs to come from the main loader classpath");
+    assertEquals(testInterfaceImpl.getClass().getClassLoader(), loader,
+        "TestInterfaceImpl needs to come from the main loader");
     Class<?> testInterfaceImplInterface = findTestInterface(testInterfaceImpl.getClass());
     assertEquals(testInterfaceImplInterface.getClassLoader(), commonParent,
         "TestInterface which is implemented by TestInterfaceImpl needs to come from the common parent");
