@@ -13,11 +13,11 @@
   <parent>
     <artifactId>cytodynamics-parent</artifactId>
     <groupId>com.linkedin.cytodynamics</groupId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
   </parent>
 
   <artifactId>cytodynamics-test-b</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 
   <name>Cytodynamics Test: B</name>
 
