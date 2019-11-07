@@ -36,17 +36,16 @@ import com.linkedin.cytodynamics.nucleus.DelegateRelationshipBuilder;
 import org.testng.annotations.Test;
 
 import static com.linkedin.cytodynamics.util.JarUtil.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
 
 /**
- * FIXME Document me!
+ * TODO: Convert some tests into unit tests which mock out the actual classloading, so we don't need to deal with so
+ * many cases that need actual JARs to be set up
  */
 public class TestDynamicLoad {
   private static final String DATA_TXT_RESOURCE_NAME = "data.txt";
+  private static final String API_ONLY_TXT_RESOURCE_NAME = "api-only.txt";
 
   @Test
   public void testStaticLoad() {
@@ -85,41 +84,185 @@ public class TestDynamicLoad {
   }
 
   @Test
-  public void testLoadResources() throws IOException {
+  public void testLoadResourcesFullIsolation() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
             .build())
         .build();
-
-    URL dataUrl = loader.getResource(DATA_TXT_RESOURCE_NAME);
-    assertEquals(readLine(dataUrl.openStream()), "A");
-
-    assertEquals(readLine(loader.getResourceAsStream(DATA_TXT_RESOURCE_NAME)), "A");
-
-    Enumeration<URL> dataUrls = loader.getResources(DATA_TXT_RESOURCE_NAME);
-    // should only have a single resource
-    assertEquals(readLine(dataUrls.nextElement().openStream()), "A");
-    assertFalse(dataUrls.hasMoreElements());
+    // should not find parent resource
+    assertResourcesFound(loader, DATA_TXT_RESOURCE_NAME, Collections.singletonList("A"));
   }
 
-  /**
-   * This tests that resources will only be loaded from the direct classpath and not the parent nor the fallback.
-   */
   @Test
-  public void testLoadResourcesIsolation() throws IOException {
-    // parent and fallback can have the same classpath, since we are just testing that they aren't used
-    ClassLoader parentClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
+  public void testLoadResourcesFullIsolationNoneFound() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .build())
+        .build();
+    assertNull(loader.getResource(API_ONLY_TXT_RESOURCE_NAME));
+    assertNull(loader.getResourceAsStream(API_ONLY_TXT_RESOURCE_NAME));
+    assertFalse(loader.getResources(API_ONLY_TXT_RESOURCE_NAME).hasMoreElements());
+  }
+
+  @Test
+  public void testLoadResourcesNoneIsolation() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+    // should include parent resource after own resource
+    assertResourcesFound(loader, DATA_TXT_RESOURCE_NAME, Arrays.asList("A", "API"));
+  }
+
+  @Test
+  public void testLoadResourcesNoneIsolationNoneFound() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+    assertNull(loader.getResource("not-a-resource-file.txt"));
+    assertNull(loader.getResourceAsStream("not-a-resource-file.txt"));
+    assertFalse(loader.getResources("not-a-resource-file.txt").hasMoreElements());
+  }
+
+  @Test
+  public void testLoadResourcesNoneIsolationOnlyInParent() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .build())
+        .build();
+    // should include parent resource after own resource
+    assertResourcesFound(loader, API_ONLY_TXT_RESOURCE_NAME, Collections.singletonList("API-only"));
+  }
+
+  @Test
+  public void testLoadResourcesWithDelegatePreferredFullIsolation() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addDelegatePreferredResourcePredicate(new GlobMatcher(DATA_TXT_RESOURCE_NAME))
+            .build())
+        .build();
+
+    // should prefer parent resource
+    assertResourcesFound(loader, DATA_TXT_RESOURCE_NAME, Arrays.asList("API", "A"));
+  }
+
+  @Test
+  public void testLoadResourcesWithDelegatePreferredFullIsolationOnlyInParent() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addDelegatePreferredResourcePredicate(new GlobMatcher(API_ONLY_TXT_RESOURCE_NAME))
+            .build())
+        .build();
+
+    // should prefer parent resource
+    assertResourcesFound(loader, API_ONLY_TXT_RESOURCE_NAME, Collections.singletonList("API-only"));
+  }
+
+  @Test
+  public void testLoadResourcesWithDelegatePreferredNoneIsolation() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .addDelegatePreferredResourcePredicate(new GlobMatcher(DATA_TXT_RESOURCE_NAME))
+            .build())
+        .build();
+
+    // should prefer parent resource
+    assertResourcesFound(loader, DATA_TXT_RESOURCE_NAME, Arrays.asList("API", "A"));
+  }
+
+  @Test
+  public void testLoadResourcesWithDelegatePreferredNoneIsolationOnlyInParent() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.NONE)
+            .addDelegatePreferredResourcePredicate(new GlobMatcher(API_ONLY_TXT_RESOURCE_NAME))
+            .build())
+        .build();
+
+    // should prefer parent resource
+    assertResourcesFound(loader, API_ONLY_TXT_RESOURCE_NAME, Collections.singletonList("API-only"));
+  }
+
+  @Test
+  public void testLoadResourcesWithWhitelist() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader loader = LoaderBuilder
+        .anIsolatingLoader()
+        .withOriginRestriction(OriginRestriction.allowByDefault())
+        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withParentRelationship(DelegateRelationshipBuilder.builder()
+            .withDelegateClassLoader(apiClassLoader)
+            .withIsolationLevel(IsolationLevel.FULL)
+            .addWhitelistedResourcePredicate(new GlobMatcher(API_ONLY_TXT_RESOURCE_NAME))
+            .build())
+        .build();
+    assertResourcesFound(loader, API_ONLY_TXT_RESOURCE_NAME, Collections.singletonList("API-only"));
+  }
+
+  @Test
+  public void testLoadResourcesWithFallback() throws IOException {
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
         .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
-            .withDelegateClassLoader(parentClassLoaderA)
+            .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
             .build())
         .addFallbackDelegate(DelegateRelationshipBuilder.builder()
@@ -127,16 +270,8 @@ public class TestDynamicLoad {
             .withIsolationLevel(IsolationLevel.NONE)
             .build())
         .build();
-
-    URL dataUrl = loader.getResource(DATA_TXT_RESOURCE_NAME);
-    assertEquals(readLine(dataUrl.openStream()), "B");
-
-    assertEquals(readLine(loader.getResourceAsStream(DATA_TXT_RESOURCE_NAME)), "B");
-
-    Enumeration<URL> dataUrls = loader.getResources(DATA_TXT_RESOURCE_NAME);
-    // should only have a single resource
-    assertEquals(readLine(dataUrls.nextElement().openStream()), "B");
-    assertFalse(dataUrls.hasMoreElements());
+    // prefer own resource, but parent and fallback resources are still visible
+    assertResourcesFound(loader, DATA_TXT_RESOURCE_NAME, Arrays.asList("B", "API", "A"));
   }
 
   @Test
@@ -665,5 +800,27 @@ public class TestDynamicLoad {
         BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
       return bufferedReader.readLine();
     }
+  }
+
+
+
+  /**
+   * Validates resource loading.
+   *
+   * @param loader {@link ClassLoader} under test to load resources from
+   * @param resourceContent expected content in the resources to be returned, in expected order
+   */
+  private static void assertResourcesFound(ClassLoader loader, String resourceName, List<String> resourceContent)
+      throws IOException {
+    URL dataUrl = loader.getResource(resourceName);
+    assertEquals(readLine(dataUrl.openStream()), resourceContent.get(0));
+    assertEquals(readLine(loader.getResourceAsStream(resourceName)), resourceContent.get(0));
+    Enumeration<URL> dataUrls = loader.getResources(resourceName);
+    for (String expectedContent : resourceContent) {
+      assertTrue(dataUrls.hasMoreElements(),
+          String.format("Expected to find resource with content %s, but no more resources found", expectedContent));
+      assertEquals(readLine(dataUrls.nextElement().openStream()), expectedContent);
+    }
+    assertFalse(dataUrls.hasMoreElements());
   }
 }

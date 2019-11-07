@@ -20,17 +20,25 @@ public class DelegateRelationship {
   private final Set<Predicate<String>> delegatePreferredClassPredicates;
   private final Set<Predicate<String>> blacklistedClassPredicates;
   private final Set<Predicate<String>> whitelistedClassPredicates;
+  private final Set<Predicate<String>> delegatePreferredResourcePredicates;
+  private final Set<Predicate<String>> blacklistedResourcePredicates;
+  private final Set<Predicate<String>> whitelistedResourcePredicates;
 
-  DelegateRelationship(ClassLoader delegateClassLoader,
-      IsolationLevel isolationLevel,
+  DelegateRelationship(ClassLoader delegateClassLoader, IsolationLevel isolationLevel,
       Set<Predicate<String>> delegatePreferredClassPredicates,
       Set<Predicate<String>> blacklistedClassPredicates,
-      Set<Predicate<String>> whitelistedClassPredicates) {
+      Set<Predicate<String>> whitelistedClassPredicates,
+      Set<Predicate<String>> delegatePreferredResourcePredicates,
+      Set<Predicate<String>> blacklistedResourcePredicates,
+      Set<Predicate<String>> whitelistedResourcePredicates) {
     this.delegateClassLoader = delegateClassLoader;
     this.isolationLevel = isolationLevel;
     this.delegatePreferredClassPredicates = delegatePreferredClassPredicates;
     this.blacklistedClassPredicates = blacklistedClassPredicates;
     this.whitelistedClassPredicates = whitelistedClassPredicates;
+    this.delegatePreferredResourcePredicates = delegatePreferredResourcePredicates;
+    this.blacklistedResourcePredicates = blacklistedResourcePredicates;
+    this.whitelistedResourcePredicates = whitelistedResourcePredicates;
   }
 
   public ClassLoader getDelegateClassLoader() {
@@ -51,5 +59,17 @@ public class DelegateRelationship {
 
   public Set<Predicate<String>> getWhitelistedClassPredicates() {
     return whitelistedClassPredicates;
+  }
+
+  public Set<Predicate<String>> getDelegatePreferredResourcePredicates() {
+    return delegatePreferredResourcePredicates;
+  }
+
+  public Set<Predicate<String>> getBlacklistedResourcePredicates() {
+    return blacklistedResourcePredicates;
+  }
+
+  public Set<Predicate<String>> getWhitelistedResourcePredicates() {
+    return whitelistedResourcePredicates;
   }
 }
