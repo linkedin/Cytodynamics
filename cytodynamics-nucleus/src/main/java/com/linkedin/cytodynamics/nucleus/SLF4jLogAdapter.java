@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018-2019 LinkedIn Corporation
  * All Rights Reserved.
  *
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 class SLF4jLogAdapter implements LogAdapter {
   static boolean isAvailable() {
     try {
-      Class<?> ignored = Class.forName("org.slf4j.Logger");
+      Class.forName("org.slf4j.Logger");
       return true;
     } catch (ClassNotFoundException e) {
       return false;
