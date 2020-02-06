@@ -7,16 +7,16 @@
  */
 package com.linkedin.cytodynamics.matcher;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.testng.Assert.*;
+import static org.junit.Assert.*;
 
 
 public class BootstrapClassPredicateTest {
   private BootstrapClassPredicate bootstrapClassPredicate;
 
-  @BeforeMethod
+  @Before
   public void setup() {
     this.bootstrapClassPredicate = new BootstrapClassPredicate();
   }

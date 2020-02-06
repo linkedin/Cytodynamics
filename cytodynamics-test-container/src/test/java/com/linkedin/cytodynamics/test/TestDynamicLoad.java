@@ -33,10 +33,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.linkedin.cytodynamics.nucleus.DelegateRelationshipBuilder;
-import org.testng.annotations.Test;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static com.linkedin.cytodynamics.util.JarUtil.*;
-import static org.testng.Assert.*;
+import static org.junit.Assert.*;
 
 
 /**
@@ -291,8 +292,10 @@ public class TestDynamicLoad {
     assertEquals(implementation.getValue(), "B");
   }
 
-  @Test(description = "Given that the loader is a parent of another classloader, then it should still properly do "
-      + "classloading")
+  /**
+   * Given that the loader is a parent of another classloader, then it should still properly do classloading.
+   */
+  @Test
   public void testLoadAsParent() throws Exception {
     URI apiJarUri = getJarUri("cytodynamics-test-api");
     // need cytodynamics-nucleus for Api annotation in parent
@@ -312,14 +315,14 @@ public class TestDynamicLoad {
     // build a URLClassLoader with no classpath so only the parent would be used
     ClassLoader mainClassLoader = new URLClassLoader(new URL[]{}, loader);
     Class<?> testInterfaceClass = mainClassLoader.loadClass(TestInterface.class.getName());
-    assertEquals(testInterfaceClass.getClassLoader(), apiClassLoader,
-        "Should delegate up to the API classloader for the API class");
+    assertEquals("Should delegate up to the API classloader for the API class", testInterfaceClass.getClassLoader(),
+        apiClassLoader);
     Class<?> nonApiTestInterface = mainClassLoader.loadClass(NonApiTestInterface.class.getName());
-    assertEquals(nonApiTestInterface.getClassLoader(), loader,
-        "If there is a non-API class which is also in API classloader, shouldn't load from API classloader");
+    assertEquals("If there is a non-API class which is also in API classloader, shouldn't load from API classloader",
+        nonApiTestInterface.getClassLoader(), loader);
     Class<?> testInterfaceImplClass = mainClassLoader.loadClass(TestInterfaceImpl.class.getName());
-    assertEquals(testInterfaceImplClass.getClassLoader(), loader,
-        "Should delegate up to the isolating loader for the concrete (non-API) class");
+    assertEquals("Should delegate up to the isolating loader for the concrete (non-API) class",
+        testInterfaceImplClass.getClassLoader(), loader);
   }
 
   @Test
@@ -463,8 +466,11 @@ public class TestDynamicLoad {
     assertEquals(implementationB.getValue(), "B");
   }
 
-  @Test(description = "Given that there is a parent and a fallback delegate, and all can load a class, the class "
-      + "should be loaded from the parent")
+  /**
+   * Given that there is a parent and a fallback delegate, and all can load a class, the class should be loaded from the
+   * parent.
+   */
+  @Test
   public void testLoadFromParentNotFallback() throws Exception {
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
@@ -493,8 +499,11 @@ public class TestDynamicLoad {
     assertEquals(clazz.getClassLoader(), parentClassLoaderA);
   }
 
-  @Test(description = "Given that there is a parent and a fallback delegate, but only the fallback parent has a "
-      + "class, the class should be loaded by the fallback")
+  /**
+   * Given that there is a parent and a fallback delegate, but only the fallback parent has a class, the class should be
+   * loaded by the fallback.
+   */
+  @Test
   public void testLoadFromFallback() throws Exception {
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
@@ -531,8 +540,11 @@ public class TestDynamicLoad {
     assertEquals(clazz.getClassLoader(), fallbackClassLoaderB);
   }
 
-  @Test(description = "Given that there is a parent and a fallback delegate, but only the final fallback has a class, "
-      + "the class should be loaded by that final fallback")
+  /**
+   * Given that there is a parent and a fallback delegate, but only the final fallback has a class, the class should be
+   * loaded by that final fallback.
+   */
+  @Test
   public void testLoadFromFinalFallback() throws Exception {
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderB =
@@ -569,10 +581,11 @@ public class TestDynamicLoad {
   }
 
   /**
+   * Given FULL isolation level set for the parent and fallback, and a class is not an API, an exception should be
+   * thrown.
    * This also tests that a {@link CytodynamicsClassNotFoundException} is thrown when a class can't be found.
    */
-  @Test(description = "Given FULL isolation level set for the parent and fallback, and a class is not an API, an "
-      + "exception should be thrown", expectedExceptions = CytodynamicsClassNotFoundException.class)
+  @Test(expected = CytodynamicsClassNotFoundException.class)
   public void testIsolationForFallback() throws Exception {
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
@@ -598,6 +611,9 @@ public class TestDynamicLoad {
   }
 
   /**
+   * Given a structure in which the classloader relationships form a graph, and two of the loaders have a common parent,
+   * then delegation should properly load from the correct loaders.
+   *
    * Graph structure:
    *
    * (common parent  <------------ (partial delegation
@@ -622,8 +638,7 @@ public class TestDynamicLoad {
    * to construct A, and A would need to exist to construct B. We can't have both (excluding reflection). Therefore, we
    * are just considering an acyclic graph here.
    */
-  @Test(description = "Given a structure in which the classloader relationships form a graph, and two of the loaders "
-      + "have a common parent, then delegation should properly load from the correct loaders")
+  @Test
   public void testGraphRelationshipWithCommonParent() throws Exception {
     URL apiJarUrl = getJarUri("cytodynamics-test-api").toURL();
     // need cytodynamics-nucleus for Api annotation in parent
@@ -652,20 +667,21 @@ public class TestDynamicLoad {
         .build();
 
     Object testInterfaceImpl = loader.loadClass(TestInterfaceImpl.class.getName()).newInstance();
-    assertEquals(testInterfaceImpl.getClass().getClassLoader(), loader,
-        "TestInterfaceImpl needs to come from the main loader");
+    assertEquals("TestInterfaceImpl needs to come from the main loader", testInterfaceImpl.getClass().getClassLoader(),
+        loader);
     Class<?> testInterfaceImplInterface = findTestInterface(testInterfaceImpl.getClass());
-    assertEquals(testInterfaceImplInterface.getClassLoader(), commonParent,
-        "TestInterface which is implemented by TestInterfaceImpl needs to come from the common parent");
+    assertEquals("TestInterface which is implemented by TestInterfaceImpl needs to come from the common parent",
+        testInterfaceImplInterface.getClassLoader(), commonParent);
     Object testInterfaceAOnlyImpl = loader.loadClass(TestInterfaceAOnlyImpl.class.getName()).newInstance();
-    assertEquals(testInterfaceAOnlyImpl.getClass().getClassLoader(), partialDelegation,
-        "TestInterfaceAOnlyImpl needs to come from the partial delegation classpath");
+    assertEquals("TestInterfaceAOnlyImpl needs to come from the partial delegation classpath",
+        testInterfaceAOnlyImpl.getClass().getClassLoader(), partialDelegation);
     Class<?> testInterfaceAOnlyImplInterface = findTestInterface(testInterfaceAOnlyImpl.getClass());
-    assertEquals(testInterfaceAOnlyImplInterface.getClassLoader(), commonParent,
-        "TestInterfaceAOnlyImpl which is implemented by TestInterfaceImpl needs to come from the common parent");
+    assertEquals(
+        "TestInterfaceAOnlyImpl which is implemented by TestInterfaceImpl needs to come from the common parent",
+        testInterfaceAOnlyImplInterface.getClassLoader(), commonParent);
     // since these are both loaded from the common parent, then this should always be true, but double checking anyways
-    assertEquals(testInterfaceImplInterface, testInterfaceAOnlyImplInterface,
-        "TestInterface Class should be the same for TestInterfaceImpl and TestInterfaceAOnlyImpl");
+    assertEquals("TestInterface Class should be the same for TestInterfaceImpl and TestInterfaceAOnlyImpl",
+        testInterfaceImplInterface, testInterfaceAOnlyImplInterface);
   }
 
   @Test
@@ -714,7 +730,8 @@ public class TestDynamicLoad {
     assertFalse(implementation.classExists(this.getClass().getName()));
   }
 
-  @Test(enabled = false)
+  @Ignore
+  @Test
   public void testRepeatedLoad() throws Exception {
     System.out.println("Waiting to start");
     Thread.sleep(10000);
@@ -817,8 +834,9 @@ public class TestDynamicLoad {
     assertEquals(readLine(loader.getResourceAsStream(resourceName)), resourceContent.get(0));
     Enumeration<URL> dataUrls = loader.getResources(resourceName);
     for (String expectedContent : resourceContent) {
-      assertTrue(dataUrls.hasMoreElements(),
-          String.format("Expected to find resource with content %s, but no more resources found", expectedContent));
+      assertTrue(
+          String.format("Expected to find resource with content %s, but no more resources found", expectedContent),
+          dataUrls.hasMoreElements());
       assertEquals(readLine(dataUrls.nextElement().openStream()), expectedContent);
     }
     assertFalse(dataUrls.hasMoreElements());

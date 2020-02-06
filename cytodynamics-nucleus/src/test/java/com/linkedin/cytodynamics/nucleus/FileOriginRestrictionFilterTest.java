@@ -8,9 +8,9 @@
 package com.linkedin.cytodynamics.nucleus;
 
 import java.io.File;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 
 public class FileOriginRestrictionFilterTest {
@@ -31,13 +31,13 @@ public class FileOriginRestrictionFilterTest {
     File fileNotInTempDir = new File(tempDir.getParent(), "test3.jar");
 
     FileOriginRestrictionFilter nonRecursiveFilter = new FileOriginRestrictionFilter(tempDir, false, OriginMatchResults.ALLOW);
-    assertEquals(nonRecursiveFilter.isAllowed(fileInTempDir.toURI().toURL()), OriginMatchResults.ALLOW);
-    assertEquals(nonRecursiveFilter.isAllowed(fileInSubdirOfTempDir.toURI().toURL()), OriginMatchResults.NO_MATCH);
-    assertEquals(nonRecursiveFilter.isAllowed(fileNotInTempDir.toURI().toURL()), OriginMatchResults.NO_MATCH);
+    assertEquals(OriginMatchResults.ALLOW, nonRecursiveFilter.isAllowed(fileInTempDir.toURI().toURL()));
+    assertEquals(OriginMatchResults.NO_MATCH, nonRecursiveFilter.isAllowed(fileInSubdirOfTempDir.toURI().toURL()));
+    assertEquals(OriginMatchResults.NO_MATCH, nonRecursiveFilter.isAllowed(fileNotInTempDir.toURI().toURL()));
 
     FileOriginRestrictionFilter recursiveFilter = new FileOriginRestrictionFilter(tempDir, true, OriginMatchResults.ALLOW);
-    assertEquals(recursiveFilter.isAllowed(fileInTempDir.toURI().toURL()), OriginMatchResults.ALLOW);
-    assertEquals(recursiveFilter.isAllowed(fileInSubdirOfTempDir.toURI().toURL()), OriginMatchResults.ALLOW);
-    assertEquals(recursiveFilter.isAllowed(fileNotInTempDir.toURI().toURL()), OriginMatchResults.NO_MATCH);
+    assertEquals(OriginMatchResults.ALLOW, recursiveFilter.isAllowed(fileInTempDir.toURI().toURL()));
+    assertEquals(OriginMatchResults.ALLOW, recursiveFilter.isAllowed(fileInSubdirOfTempDir.toURI().toURL()));
+    assertEquals(OriginMatchResults.NO_MATCH, recursiveFilter.isAllowed(fileNotInTempDir.toURI().toURL()));
   }
 }
