@@ -42,10 +42,7 @@
 
   <modules>
     <module>cytodynamics-nucleus</module>
-    <module>cytodynamics-test-a</module>
-    <module>cytodynamics-test-b</module>
-    <module>cytodynamics-test-container</module>
-    <module>cytodynamics-test-api</module>
+    <module>cytodynamics-test</module>
   </modules>
 
   <properties>

@@ -32,15 +32,15 @@ public class TestLoadClassResolve {
 
   @Before
   public void setup() throws Exception {
-    URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
-    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    URL cytodynamics = getNucleusUri().toURL();
+    URL testApiJarURL = getTestJarUri("cytodynamics-test-api").toURL();
     ClassLoader parent = new URLClassLoader(new URL[]{cytodynamics, testApiJarURL}, null);
     ClassLoader fallback =
-        new URLClassLoader(new URL[]{cytodynamics, testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{cytodynamics, testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(parent)
             .withIsolationLevel(IsolationLevel.FULL)

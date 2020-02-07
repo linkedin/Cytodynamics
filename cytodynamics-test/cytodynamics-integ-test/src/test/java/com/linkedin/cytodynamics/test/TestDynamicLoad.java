@@ -64,7 +64,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -86,11 +86,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesFullIsolation() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -102,11 +102,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesFullIsolationNoneFound() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -119,11 +119,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesNoneIsolation() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
@@ -135,11 +135,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesNoneIsolationNoneFound() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
@@ -152,11 +152,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesNoneIsolationOnlyInParent() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
@@ -168,11 +168,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesWithDelegatePreferredFullIsolation() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -186,11 +186,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesWithDelegatePreferredFullIsolationOnlyInParent() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -204,11 +204,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesWithDelegatePreferredNoneIsolation() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
@@ -222,11 +222,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesWithDelegatePreferredNoneIsolationOnlyInParent() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
@@ -240,11 +240,11 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesWithWhitelist() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -256,12 +256,12 @@ public class TestDynamicLoad {
 
   @Test
   public void testLoadResourcesWithFallback() throws IOException {
-    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-api").toURL()}, null);
-    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, null);
+    ClassLoader apiClassLoader = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-api").toURL()}, null);
+    ClassLoader fallbackClassLoaderA = new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.NONE)
@@ -280,7 +280,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -297,14 +297,14 @@ public class TestDynamicLoad {
    */
   @Test
   public void testLoadAsParent() throws Exception {
-    URI apiJarUri = getJarUri("cytodynamics-test-api");
+    URI apiJarUri = getTestJarUri("cytodynamics-test-api");
     // need cytodynamics-nucleus for Api annotation in parent
-    URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
+    URL cytodynamics = getNucleusUri().toURL();
     ClassLoader apiClassLoader = new URLClassLoader(new URL[]{cytodynamics, apiJarUri.toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Arrays.asList(apiJarUri, getJarUri("cytodynamics-test-a")))
+        .withClasspath(Arrays.asList(apiJarUri, getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(apiClassLoader)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -330,7 +330,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -349,7 +349,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.lang.*"))
@@ -364,7 +364,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.TRANSITIONAL)
             .build())
@@ -377,7 +377,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.NONE)
             .build())
@@ -393,7 +393,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -409,7 +409,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.TRANSITIONAL)
             .addBlacklistedClassPredicate(new GlobMatcher("java.util.*"))
@@ -423,7 +423,7 @@ public class TestDynamicLoad {
     loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.NONE)
             .addBlacklistedClassPredicate(new GlobMatcher("java.util.Set"))
@@ -440,7 +440,7 @@ public class TestDynamicLoad {
     ClassLoader loaderA = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -451,7 +451,7 @@ public class TestDynamicLoad {
     ClassLoader loaderB = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -472,11 +472,11 @@ public class TestDynamicLoad {
    */
   @Test
   public void testLoadFromParentNotFallback() throws Exception {
-    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    URL testApiJarURL = getTestJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader fallbackClassLoaderB =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-b").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -505,13 +505,13 @@ public class TestDynamicLoad {
    */
   @Test
   public void testLoadFromFallback() throws Exception {
-    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    URL testApiJarURL = getTestJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader fallbackClassLoaderA =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader fallbackClassLoaderB =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-b").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -546,13 +546,13 @@ public class TestDynamicLoad {
    */
   @Test
   public void testLoadFromFinalFallback() throws Exception {
-    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    URL testApiJarURL = getTestJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderB =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-b").toURL()}, null);
     ClassLoader fallbackClassLoaderB =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-b").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-b").toURL()}, null);
     ClassLoader fallbackClassLoaderA =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -587,11 +587,11 @@ public class TestDynamicLoad {
    */
   @Test(expected = CytodynamicsClassNotFoundException.class)
   public void testIsolationForFallback() throws Exception {
-    URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
+    URL testApiJarURL = getTestJarUri("cytodynamics-test-api").toURL();
     ClassLoader parentClassLoaderA =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader fallbackClassLoaderA =
-        new URLClassLoader(new URL[]{testApiJarURL, getJarUri("cytodynamics-test-a").toURL()}, null);
+        new URLClassLoader(new URL[]{testApiJarURL, getTestJarUri("cytodynamics-test-a").toURL()}, null);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
@@ -640,16 +640,16 @@ public class TestDynamicLoad {
    */
   @Test
   public void testGraphRelationshipWithCommonParent() throws Exception {
-    URL apiJarUrl = getJarUri("cytodynamics-test-api").toURL();
+    URL apiJarUrl = getTestJarUri("cytodynamics-test-api").toURL();
     // need cytodynamics-nucleus for Api annotation in parent
-    URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
+    URL cytodynamics = getNucleusUri().toURL();
     ClassLoader commonParent = new URLClassLoader(new URL[]{cytodynamics, apiJarUrl}, null);
     ClassLoader partialDelegation =
-        new URLClassLoader(new URL[]{getJarUri("cytodynamics-test-a").toURL()}, commonParent);
+        new URLClassLoader(new URL[]{getTestJarUri("cytodynamics-test-a").toURL()}, commonParent);
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-b")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-b")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withDelegateClassLoader(commonParent)
             .withIsolationLevel(IsolationLevel.FULL)
@@ -699,7 +699,7 @@ public class TestDynamicLoad {
     ClassLoader loader = LoaderBuilder
         .anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri(jarToUse)))
+        .withClasspath(Collections.singletonList(getTestJarUri(jarToUse)))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -718,7 +718,7 @@ public class TestDynamicLoad {
   public void testParentPreferredBootstrapClass() throws Exception {
     ClassLoader loader = LoaderBuilder.anIsolatingLoader()
         .withOriginRestriction(OriginRestriction.allowByDefault())
-        .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+        .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
         .withParentRelationship(DelegateRelationshipBuilder.builder()
             .withIsolationLevel(IsolationLevel.FULL)
             .addWhitelistedClassPredicate(new BootstrapClassPredicate())
@@ -740,7 +740,7 @@ public class TestDynamicLoad {
       ClassLoader loader = LoaderBuilder
           .anIsolatingLoader()
           .withOriginRestriction(OriginRestriction.allowByDefault())
-          .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+          .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
           .withParentRelationship(DelegateRelationshipBuilder.builder()
               .withIsolationLevel(IsolationLevel.FULL)
               .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
@@ -761,7 +761,7 @@ public class TestDynamicLoad {
   @Test
   public void testSecurity() throws Exception {
     File tempDir = new File(System.getProperty("java.io.tmpdir"));
-    Path sourcePath = new File(getJarUri("cytodynamics-test-a")).toPath();
+    Path sourcePath = new File(getTestJarUri("cytodynamics-test-a")).toPath();
     File destinationFile = new File(tempDir, "a.jar");
 
     if (destinationFile.exists()) {
@@ -777,7 +777,7 @@ public class TestDynamicLoad {
       LoaderBuilder
           .anIsolatingLoader()
           .withOriginRestriction(onlyTmpOriginRestriction)
-          .withClasspath(Collections.singletonList(getJarUri("cytodynamics-test-a")))
+          .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
           .withParentRelationship(DelegateRelationshipBuilder.builder()
               .withIsolationLevel(IsolationLevel.FULL)
               .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
