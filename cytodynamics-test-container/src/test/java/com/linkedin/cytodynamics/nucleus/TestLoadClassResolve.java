@@ -14,8 +14,8 @@ import com.linkedin.cytodynamics.test.TestInterfaceImpl;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 import static com.linkedin.cytodynamics.util.JarUtil.*;
 import static org.mockito.Mockito.*;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 public class TestLoadClassResolve {
   private IsolatingClassLoader isolatingClassLoader;
 
-  @BeforeMethod
+  @Before
   public void setup() throws Exception {
     URL cytodynamics = getJarUri("cytodynamics-nucleus").toURL();
     URL testApiJarURL = getJarUri("cytodynamics-test-api").toURL();
@@ -61,8 +61,10 @@ public class TestLoadClassResolve {
     this.isolatingClassLoader = spy((IsolatingClassLoader) loader);
   }
 
-  @Test(description = "Given that loadClass is called with the resolve argument as false, loadClass should properly "
-      + "skip the resolve step")
+  /**
+   * Given that loadClass is called with the resolve argument as false, loadClass should properly skip the resolve step.
+   */
+  @Test
   public void testLoadClassWithResolveFalse() throws Exception {
     // from parent classloader
     this.isolatingClassLoader.loadClass(TestInterface.class.getName(), false);
@@ -73,22 +75,30 @@ public class TestLoadClassResolve {
     verify(this.isolatingClassLoader, never()).doResolveClass(any());
   }
 
-  @Test(description = "Given a class to be loaded from the parent classloader and resolve as true, loadClass should "
-      + "execute the resolve step")
+  /**
+   * Given a class to be loaded from the parent classloader and resolve as true, loadClass should execute the resolve
+   * step.
+   */
+  @Test
   public void testLoadClassWithResolveTrueFromParent() throws Exception {
     Class<?> testInterfaceClass = this.isolatingClassLoader.loadClass(TestInterface.class.getName(), true);
     verify(isolatingClassLoader).doResolveClass(testInterfaceClass);
   }
 
-  @Test(description = "Given a class to be loaded from the classpath and resolve as true, loadClass should execute the "
-      + "resolve step")
+  /**
+   * Given a class to be loaded from the classpath and resolve as true, loadClass should execute the resolve step.
+   */
+  @Test
   public void testLoadClassWithResolveTrueFromClasspath() throws Exception {
     Class<?> testInterfaceImplClass = isolatingClassLoader.loadClass(TestInterfaceImpl.class.getName(), true);
     verify(isolatingClassLoader).doResolveClass(testInterfaceImplClass);
   }
 
-  @Test(description = "Given a class to be loaded from the fallback classloader and resolve as true, loadClass should "
-      + "execute the resolve step")
+  /**
+   * Given a class to be loaded from the fallback classloader and resolve as true, loadClass should execute the resolve
+   * step.
+   */
+  @Test
   public void testLoadClassWithResolveTrueFromFallback() throws Exception {
     Class<?> testInterfaceAOnlyImplClass = isolatingClassLoader.loadClass(TestInterfaceAOnlyImpl.class.getName(), true);
     verify(isolatingClassLoader).doResolveClass(testInterfaceAOnlyImplClass);

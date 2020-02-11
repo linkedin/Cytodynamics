@@ -8,10 +8,9 @@
 package com.linkedin.cytodynamics.nucleus;
 
 import java.net.URL;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 public class OriginRestrictionTest {

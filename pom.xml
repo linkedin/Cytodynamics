@@ -29,8 +29,14 @@
     <developer>
       <name>Jean-Francois Im</name>
       <email>jfim@linkedin.com</email>
-      <organization>Linkedin Corp</organization>
-      <organizationUrl>http://www.linkedin.com</organizationUrl>
+      <organization>LinkedIn Corporation</organization>
+      <organizationUrl>https://www.linkedin.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Cameron Lee</name>
+      <email>calee@linkedin.com</email>
+      <organization>LinkedIn Corporation</organization>
+      <organizationUrl>https://www.linkedin.com</organizationUrl>
     </developer>
   </developers>
 
@@ -214,24 +220,10 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.testng</groupId>
-        <artifactId>testng</artifactId>
-        <version>6.8</version>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
         <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>junit</artifactId>
-            <groupId>junit</groupId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-          </exclusion>
-          <exclusion>
-            <artifactId>bsh</artifactId>
-            <groupId>org.beanshell</groupId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>

@@ -8,10 +8,10 @@
 package com.linkedin.cytodynamics.isolation;
 
 import java.util.function.Consumer;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
 
 
 public class TestTransitionalIsolationChooser {
