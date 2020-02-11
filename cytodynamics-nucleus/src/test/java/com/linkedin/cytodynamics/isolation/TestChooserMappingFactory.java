@@ -10,9 +10,9 @@ package com.linkedin.cytodynamics.isolation;
 import com.linkedin.cytodynamics.nucleus.IsolationLevel;
 import java.util.List;
 import java.util.Map;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
-import static org.testng.Assert.*;
+import static org.junit.Assert.*;
 
 
 public class TestChooserMappingFactory {
@@ -35,7 +35,10 @@ public class TestChooserMappingFactory {
     assertTrue(chooserMappingFactory.get(IsolationLevel.FULL) instanceof FullIsolationChooser);
   }
 
-  @Test(description = "Validates that all isolation levels are handled in the mapping built by the factory")
+  /**
+   * Validates that all isolation levels are handled in the mapping built by the factory
+   */
+  @Test
   public void testAllLevelsHandled() {
     Map<IsolationLevel, Chooser<String>> chooserMappingFactory = ChooserMappingFactory.buildChooserMapping(obj -> {
     });

@@ -12,11 +12,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 public class ProtocolOriginRestrictionFilterTest {
@@ -26,19 +24,19 @@ public class ProtocolOriginRestrictionFilterTest {
         ProtocolOriginRestrictionFilter(Collections.singleton("http"), OriginMatchResults.ALLOW);
 
     assertTrue(httpOnly.matches(new URL("http://www.example.com/")));
-    assertEquals(httpOnly.isAllowed(new URL("http://www.example.com/")), OriginMatchResults.ALLOW);
+    assertEquals(OriginMatchResults.ALLOW, httpOnly.isAllowed(new URL("http://www.example.com/")));
 
     assertFalse(httpOnly.matches(new URL("https://www.example.com/")));
-    assertEquals(httpOnly.isAllowed(new URL("https://www.example.com/")), OriginMatchResults.NO_MATCH);
+    assertEquals(OriginMatchResults.NO_MATCH, httpOnly.isAllowed(new URL("https://www.example.com/")));
 
     Set<String> protocolSet = new HashSet<>(Arrays.asList("http", "https"));
     ProtocolOriginRestrictionFilter httpAndHttpsDeny = new
         ProtocolOriginRestrictionFilter(protocolSet, OriginMatchResults.DENY);
 
     assertTrue(httpAndHttpsDeny.matches(new URL("http://www.example.com/")));
-    assertEquals(httpAndHttpsDeny.isAllowed(new URL("http://www.example.com/")), OriginMatchResults.DENY);
+    assertEquals(OriginMatchResults.DENY, httpAndHttpsDeny.isAllowed(new URL("http://www.example.com/")));
 
     assertTrue(httpAndHttpsDeny.matches(new URL("https://www.example.com/")));
-    assertEquals(httpAndHttpsDeny.isAllowed(new URL("https://www.example.com/")), OriginMatchResults.DENY);
+    assertEquals(OriginMatchResults.DENY, httpAndHttpsDeny.isAllowed(new URL("https://www.example.com/")));
   }
 }
