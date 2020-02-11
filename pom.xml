@@ -29,8 +29,14 @@
     <developer>
       <name>Jean-Francois Im</name>
       <email>jfim@linkedin.com</email>
-      <organization>Linkedin Corp</organization>
-      <organizationUrl>http://www.linkedin.com</organizationUrl>
+      <organization>LinkedIn Corporation</organization>
+      <organizationUrl>https://www.linkedin.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Cameron Lee</name>
+      <email>calee@linkedin.com</email>
+      <organization>LinkedIn Corporation</organization>
+      <organizationUrl>https://www.linkedin.com</organizationUrl>
     </developer>
   </developers>
 

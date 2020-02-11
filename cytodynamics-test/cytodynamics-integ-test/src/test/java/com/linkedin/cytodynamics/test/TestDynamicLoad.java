@@ -730,34 +730,6 @@ public class TestDynamicLoad {
     assertFalse(implementation.classExists(this.getClass().getName()));
   }
 
-  @Ignore
-  @Test
-  public void testRepeatedLoad() throws Exception {
-    System.out.println("Waiting to start");
-    Thread.sleep(10000);
-
-    for (int i = 0; i < 1000000; i++) {
-      ClassLoader loader = LoaderBuilder
-          .anIsolatingLoader()
-          .withOriginRestriction(OriginRestriction.allowByDefault())
-          .withClasspath(Collections.singletonList(getTestJarUri("cytodynamics-test-a")))
-          .withParentRelationship(DelegateRelationshipBuilder.builder()
-              .withIsolationLevel(IsolationLevel.FULL)
-              .addWhitelistedClassPredicate(new GlobMatcher("java.*"))
-              .build())
-          .build();
-
-      TestInterface implementation = (TestInterface) loader.loadClass(TestInterfaceImpl.class.getName()).newInstance();
-      assertTrue(implementation.classExists("java.lang.String"));
-      assertFalse(implementation.classExists(this.getClass().getName()));
-    }
-
-    System.gc();
-
-    System.out.println("Waiting");
-    Thread.sleep(Long.MAX_VALUE);
-  }
-
   @Test
   public void testSecurity() throws Exception {
     File tempDir = new File(System.getProperty("java.io.tmpdir"));

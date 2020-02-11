@@ -15,3 +15,7 @@ License: Apache 2.0
 This product includes/uses JUnit (https://junit.org/)
 Copyright 2002-2020 JUnit
 License: Eclipse Public License 1.0
+
+This product includes/uses Mockito (https://site.mockito.org/)
+Copyright 2007 Mockito contributors
+License: MIT
