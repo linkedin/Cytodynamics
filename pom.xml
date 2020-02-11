@@ -136,6 +136,9 @@
             <owner>LinkedIn Corporation</owner>
             <email>cytodynamics@linkedin.com</email>
           </properties>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
           <excludes>
             <exclude>**/README</exclude>
             <exclude>**/*.md</exclude>

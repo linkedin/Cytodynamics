@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018-2019 LinkedIn Corporation
  * All Rights Reserved.
  *
@@ -16,7 +16,7 @@ import org.apache.logging.log4j.LogManager;
 class Log4j2LogAdapter implements LogAdapter {
   static boolean isAvailable() {
     try {
-      Class<?> ignored = Class.forName("org.apache.logging.log4j.Logger");
+      Class.forName("org.apache.logging.log4j.Logger");
       return true;
     } catch (ClassNotFoundException e) {
       return false;
