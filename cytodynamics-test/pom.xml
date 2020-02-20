@@ -10,22 +10,27 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <groupId>com.linkedin.cytodynamics</groupId>
+  <artifactId>cytodynamics-test</artifactId>
+  <version>0.2.0</version>
+  <packaging>pom</packaging>
+  <name>Cytodynamics testing modules</name>
+
   <parent>
     <artifactId>cytodynamics-parent</artifactId>
     <groupId>com.linkedin.cytodynamics</groupId>
     <version>0.2.0</version>
   </parent>
 
-  <artifactId>cytodynamics-test-a</artifactId>
-  <version>0.2.0</version>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
 
-  <name>Cytodynamics Test: A</name>
+  <modules>
+    <module>cytodynamics-test-api</module>
+    <module>cytodynamics-test-a</module>
+    <module>cytodynamics-test-b</module>
+    <module>cytodynamics-integ-test</module>
+  </modules>
 
-  <dependencies>
-    <dependency>
-      <groupId>com.linkedin.cytodynamics</groupId>
-      <artifactId>cytodynamics-test-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
 </project>

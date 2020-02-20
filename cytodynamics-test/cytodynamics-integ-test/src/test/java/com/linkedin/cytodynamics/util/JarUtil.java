@@ -13,11 +13,23 @@ import java.net.URI;
 
 
 public class JarUtil {
+  private static final String CYTODYNAMICS_NUCLEUS = "cytodynamics-nucleus";
+
+  public static URI getNucleusUri() throws IOException {
+    return getJarUri(findBaseDirectory(), CYTODYNAMICS_NUCLEUS);
+  }
+
   /**
-   * Find the {@link URI} corersponding to the JAR for a module.
+   * Find the {@link URI} corresponding to the JAR for a test module.
+   * This assumes that the test module is inside a module "cytodynamics-test", which is inside the top-level module.
    */
-  public static URI getJarUri(String moduleName) throws IOException {
-    File targetDir = new File(new File(findBaseDirectory(), moduleName), "target");
+  public static URI getTestJarUri(String moduleName) throws IOException {
+    File testDir = new File(findBaseDirectory(), "cytodynamics-test");
+    return getJarUri(testDir, moduleName);
+  }
+
+  private static URI getJarUri(File moduleParent, String moduleName) {
+    File targetDir = new File(new File(moduleParent, moduleName), "target");
 
     if (!targetDir.exists()) {
       throw new IllegalStateException(String.format("No target directory exists for module %s", moduleName));
@@ -44,16 +56,16 @@ public class JarUtil {
 
   private static File findBaseDirectory() throws IOException {
     File currentDirectory = new File(".").getCanonicalFile();
-    File testADirectory = new File(currentDirectory, "cytodynamics-test-a");
-    if (testADirectory.exists() && testADirectory.isDirectory()) {
+    File nucleusDirectory = new File(currentDirectory, CYTODYNAMICS_NUCLEUS);
+    if (nucleusDirectory.exists() && nucleusDirectory.isDirectory()) {
       return currentDirectory;
     }
 
     while (currentDirectory.getParentFile() != null) {
       currentDirectory = currentDirectory.getParentFile();
 
-      testADirectory = new File(currentDirectory, "cytodynamics-test-a");
-      if (testADirectory.exists() && testADirectory.isDirectory()) {
+      nucleusDirectory = new File(currentDirectory, CYTODYNAMICS_NUCLEUS);
+      if (nucleusDirectory.exists() && nucleusDirectory.isDirectory()) {
         return currentDirectory;
       }
     }
